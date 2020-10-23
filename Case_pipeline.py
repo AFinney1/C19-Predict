@@ -4,7 +4,7 @@ import numpy as np
 from tkinter import Tk
 import streamlit as st
 from tkinter import filedialog
-import Tk
+
 
 def get_cases():
     f = filedialog.askopenfilename(initialdir = "C19-Predict",
@@ -16,11 +16,10 @@ def get_cases():
     #label_file_explorer.configure(text="File Opened: "+f)
     window = Tk()
     window.title("Case data explorer")
-    case_df = pd.read_csv("/Local_case_data/"+str(f))
+    case_df = pd.read_csv(str(f))
     return case_df
 
-
-get_cases()
+#print(get_cases())
 
 
 
