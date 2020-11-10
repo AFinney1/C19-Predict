@@ -30,3 +30,4 @@ print("\nCase DataFrame Description: \n", case_df.describe())
 
 
 case_dataset = tf.data.Dataset.from_tensor_slices(c)
+print(case_dataset)
