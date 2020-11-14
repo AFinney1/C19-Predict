@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np 
 #import conducto as C
 from tkinter import Tk
-import streamlit as st
+#import streamlit as st
 from tkinter import filedialog
 
 
