@@ -19,8 +19,6 @@ def get_cases():
     case_df = pd.read_csv(str(f))
     return case_df
 
-print(get_cases())
-
 
 
 
