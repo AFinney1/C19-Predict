@@ -7,7 +7,8 @@ from tkinter import filedialog
 
 
 def get_cases():
-    f = filedialog.askopenfilename(initialdir = "C19-Predict",
+    f = filedialog.askopenfilename(initialdir = "C19-Predict/Local_case_data/",
+                                    initialfile = "time_series_covid19_confirmed_US.csv",
                                         title = "Select a File",
                                         filetypes = (("CSV files",
                                         "*.csv*"),
