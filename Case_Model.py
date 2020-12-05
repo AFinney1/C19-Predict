@@ -9,7 +9,7 @@ from tkinter import Tk
 #import streamlit as st
 from tkinter import filedialog
 from Case_pipeline import get_cases 
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
 from tensorflow import keras
@@ -18,28 +18,38 @@ import sklearn
 
 #Data importation test
 case_df = get_cases()
+
 print("Case DataFrame: ", case_df)
 print("\nShape of case dataframe",case_df.shape)
-print("\nColumns of case dataframe: ",case_df.columns)
+columns = case_df.columns
+print("\nColumns of case dataframe: ", columns)
 print("\nUnique values for each variable:\n",case_df.nunique(axis=0))
 #print("\nCase DataFrame Description: \n", case_df.describe())
 
-
+case_df.drop(columns[:4],inplace=True)
 
 #Train, test, split
 
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 
-regions = case_df.groupby("Province_State")
+#regions = case_df.groupby("Province_State")['Mississippi'].plot(kind = 'line')
 #
+
 # regions.apply(print)
 
 region_col = list(case_df.columns.values)
 #region_col_ax = region_col.remove("Province_State")
 region_col_ax = region_col[11:]
 #print(region_col_ax)
+
 plot_cols = region_col_ax
 region = case_df.loc[case_df['Province_State'] == 'Mississippi']
+print(region)
+county = region.loc[region['Admin2'] == 'Adams']
+#county.plot(y = region_col_ax)
+plt.plot(county)
+plt.show()
+print(county)
 '''
 for states in regions:
     #print(region[0])
@@ -49,14 +59,15 @@ for states in regions:
         #region = region.apply(pd.DataFrame)
         #print(region)
         date_time = pd.to_datetime(region_col_ax)
-        plot_features = region[len(region)].values
+        plot_features = states[:300]
+        counts = plot_features.plot()
        # plot_features.index = date_time
       #  _ = plot_features.plot(subplots=True)
      #   plot_features = region[plot_cols][11:]
       #  plot_features.index = date_time[11:]
 '''
-plot_features = region[region_col_ax]
-_ = plot_features.plot()
+#plot_features = region[region_col_ax]
+#_ = plot_features.plot()
 
 
 #case_dataset = tf.data.Dataset.from_tensor_slices(case_df)
