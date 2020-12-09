@@ -25,8 +25,10 @@ columns = case_df.columns
 print("\nColumns of case dataframe: ", columns)
 print("\nUnique values for each variable:\n",case_df.nunique(axis=0))
 #print("\nCase DataFrame Description: \n", case_df.describe())
-
-case_df.drop(columns[:4],inplace=True)
+#case_df = case_df.T
+fips_list = case_df['FIPS']
+print(case_df)
+case_df.drop(columns[:5],inplace=True, axis = 1)
 
 #Train, test, split
 
@@ -45,11 +47,30 @@ region_col_ax = region_col[11:]
 plot_cols = region_col_ax
 region = case_df.loc[case_df['Province_State'] == 'Mississippi']
 print(region)
-county = region.loc[region['Admin2'] == 'Adams']
-#county.plot(y = region_col_ax)
-plt.plot(county)
-plt.show()
+
+county_name = "Hinds"
+county_list = region['Admin2']
+county = region.loc[region['Admin2'] == county_name]
 print(county)
+county.drop(columns[5:11], inplace = True, axis = 1)
+
+date_index = range(len(county))
+
+county = county.T
+#county.reindex(date_index)
+#county = county.reset_index(drop=True)
+print(county)
+#county.plot(y = region_col_ax)
+#plt.plot(list(county))
+county.plot(
+    title = ("Daily cases in " + county_name + " county"),
+    legend = [county_name],
+    xlabel = "Date",
+    ylabel = 'Confirmed Cases')
+plt.legend([county_name])
+plt.show()
+
+
 '''
 for states in regions:
     #print(region[0])
@@ -66,6 +87,8 @@ for states in regions:
      #   plot_features = region[plot_cols][11:]
       #  plot_features.index = date_time[11:]
 '''
+
+
 #plot_features = region[region_col_ax]
 #_ = plot_features.plot()
 
@@ -77,13 +100,10 @@ model = tf.keras.Sequential()
 # Add an Embedding layer expecting input vocab of size 1000, and
 # output embedding dimension of size 64.
 model.add(layers.Embedding(input_dim=1000, output_dim=64))
-
 # Add a LSTM layer with 128 internal units.
 model.add(layers.LSTM(128))
-
 # Add a Dense layer with 10 units.
 model.add(layers.Dense(10))
-
 model.summary()
 
 
