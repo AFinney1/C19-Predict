@@ -3,4 +3,4 @@ venv/
 lib/
 /Lib/
 /pandas/
-C19v/
+/C19v/
