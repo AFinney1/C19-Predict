@@ -2,3 +2,5 @@ venv/
 /Lib
 lib/
 /Lib/
+/pandas/
+/C19v/
