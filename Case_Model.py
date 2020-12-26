@@ -48,7 +48,7 @@ plot_cols = region_col_ax
 region = case_df.loc[case_df['Province_State'] == 'Mississippi']
 print(region)
 
-county_name = "Hinds"
+county_name = "Rankin"
 county_list = region['Admin2']
 county = region.loc[region['Admin2'] == county_name]
 print(county)
