@@ -135,7 +135,7 @@ class WindowGenerator():
         self.total_window_size = input_width + shift 
 
         self.input_slice = slice(0, input_width)
-        self.input_indices = np.arange(self.total_winod
+        self.input_indices = np.arange(self.total_window
         )[self.input_slice]
 
         self.label_start = self.total_window_size - self.label_width
