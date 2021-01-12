@@ -52,7 +52,8 @@ county_name = "Rankin"
 county_list = region['Admin2']
 county = region.loc[region['Admin2'] == county_name]
 print(county)
-county.drop(columns[5:11], inplace = True, axis = 1)
+columns = columns[5:11]
+county.drop(columns, inplace = True, axis = 1)
 
 date_index = range(len(county))
 
@@ -135,8 +136,7 @@ class WindowGenerator():
         self.total_window_size = input_width + shift 
 
         self.input_slice = slice(0, input_width)
-        self.input_indices = np.arange(self.total_window
-        )[self.input_slice]
+        self.input_indices = np.arange(self.total_window_size)[self.input_slice]
 
         self.label_start = self.total_window_size - self.label_width
         self.labels_slice = slice(self.label_start, None)
@@ -150,11 +150,63 @@ class WindowGenerator():
             f'Label column name(s): {self.label_columns}'
         ])
 
+    '''Split Window function '''
+    def split_window(self, features):
+        inputs = features[:, self.input_slice, :]
+        labels = features[:, self.labels_slice, :]
+        if self.label_columns is not None:
+            labels = tf.stack(
+                [labels[:,:, self.column_indices[name]] for name in self.label_columns],
+                axis = -1)
+
+        inputs.set_shape([None, self.input_width, None])
+        labels.set_shape([None, self.label_width, None])
+
+        return inputs, labels
+
+    WindowGenerator.split_window = split_window
+    def plot(self, model=None, plot_col=columns, max_subplots = 3):
+        inputs, labels = self.example
+        plt.figure(figsize = (12,8))
+        plot_col_index = self.column_indices[plot_col]
+        max_n = min(max_subplots, len(inputs))
+        for n in range(max_n):
+            plt.subplot(3, 1, n+1)
+            plt.ylabel(f'{plot_col} [normed]')
+            plt.plot(self.input_indices, inputs[n, :, plot_col_index],
+                    label='Inputs', marker=',', zorder=-10)
+
+        if self.label_columns:
+            label_col_index = self.label_columns_indices.get(plot_col, None)
+        else: 
+            label_col_index = plot_col_index 
+
+        if label_col_index is None:
+            continue 
+
+'''Create two windows'''
 w1 = WindowGenerator(input_width=24, label_width=1, shift=24,
-label_columns =[])
+label_columns = columns)
+
+w2 = WindowGenerator(input_width=6, label_width=1, shift = 1, label_columns=columns)
+
+test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
+                        np.array(training_df[100:100+w2.total_window_size]),
+                        np.array(training_df[200:200+w2.total_window_size])
+                        ])
+
+example_inputs, example_labels = w2.split_window(test_window)
+
+print("All shapes are: (batch, time, features)") 
+print(f'Window shape: {test_window.shape}')
+print(f'Inputs shape: {example_inputs.shape}')
+print(f'Inputs shape: {example_labels.shape}')
 
 
 
+
+
+"Modeling"
 model = tf.keras.Sequential()
 # Add an Embedding layer expecting input vocab of size 1000, and
 # output embedding dimension of size 64.
@@ -164,5 +216,10 @@ model.add(layers.LSTM(128))
 # Add a Dense layer with 10 units.
 model.add(layers.Dense(10))
 model.summary()
+
+
+
+
+
 
 
