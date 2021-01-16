@@ -164,7 +164,8 @@ class WindowGenerator():
 
         return inputs, labels
 
-    WindowGenerator.split_window = split_window
+
+
     def plot(self, model=None, plot_col=columns, max_subplots = 3):
         inputs, labels = self.example
         plt.figure(figsize = (12,8))
@@ -196,13 +197,14 @@ class WindowGenerator():
                 plt.legend()
 
     plt.xlabel("Date")
-    WindowGenerator.plot = plot 
+
 
 '''Create two windows'''
 w1 = WindowGenerator(input_width=24, label_width=1, shift=24,
 label_columns = columns)
 
 w2 = WindowGenerator(input_width=6, label_width=1, shift = 1, label_columns=columns)
+
 
 test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
                         np.array(training_df[100:100+w2.total_window_size]),
