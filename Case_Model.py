@@ -176,13 +176,27 @@ class WindowGenerator():
             plt.plot(self.input_indices, inputs[n, :, plot_col_index],
                     label='Inputs', marker=',', zorder=-10)
 
-        if self.label_columns:
-            label_col_index = self.label_columns_indices.get(plot_col, None)
-        else: 
-            label_col_index = plot_col_index 
+            if self.label_columns:
+                label_col_index = self.label_columns_indices.get(plot_col, None)
+            else: 
+                label_col_index = plot_col_index 
 
-        if label_col_index is None:
-            continue 
+            if label_col_index is None:
+                continue 
+
+            plt.scatter(self.label_indices, labels[n, :, label_col_index],
+                        edgecolors='k', label='Labels', c='#2ca02c', s=64)
+            if model is not None:
+                predictions = model(inputs)
+                plt.scatter(self.label_indices, predictions[n, :, label_col_index],
+                            marker='X', edgecolors='k', label='Predictions',
+                            c='#ff7f0e', s=64)
+
+            if n==0:
+                plt.legend()
+
+    plt.xlabel("Date")
+    WindowGenerator.plot = plot 
 
 '''Create two windows'''
 w1 = WindowGenerator(input_width=24, label_width=1, shift=24,
@@ -196,6 +210,7 @@ test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
                         ])
 
 example_inputs, example_labels = w2.split_window(test_window)
+w2.plot()
 
 print("All shapes are: (batch, time, features)") 
 print(f'Window shape: {test_window.shape}')
