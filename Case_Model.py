@@ -151,33 +151,46 @@ class WindowGenerator():
             f'Label indices: {self.label_indices}',
             f'Label column name(s): {self.label_columns}'
         ])
+
+
+
+    def make_dataset(self, data):
+        data = np.array(data, dtype=np.float32)
+        ds = tf.keras.preprocessing.timeseries_dataset_from_array(
+            data=data,
+            targets=None,
+            sequence_length=self.total_window_size,
+            sequence_stride=1,
+            shuffle=True,
+            batch_size=32,)
+        ds = ds.map(self.split_window)
+
+        return ds
+
     @property
     def train(self):
-    return self.make_dataset(self.train_df)
+        return self.make_dataset(self.training_df)
 
     @property
     def val(self):
-    return self.make_dataset(self.val_df)
+        return self.make_dataset(self.val_df)
 
     @property
     def test(self):
-    return self.make_dataset(self.test_df)
+        return self.make_dataset(self.test_df)
 
     @property
     def example(self):
-    """Get and cache an example batch of `inputs, labels` for plotting."""
-    result = getattr(self, '_example', None)
-    if result is None:
-        # No example batch was found, so get one from the `.train` dataset
-        result = next(iter(self.train))
-        # And cache it for next time
-        self._example = result
-    return result
+        """Get and cache an example batch of `inputs, labels` for plotting."""
+        result = getattr(self, '_example', None)
+        if result is None:
+            # No example batch was found, so get one from the `.train` dataset
+            result = next(iter(self.train))
+            # And cache it for next time
+            self._example = result
+        return result
 
-    WindowGenerator.train = train
-    WindowGenerator.val = val
-    WindowGenerator.test = test
-    WindowGenerator.example = example
+
     '''Split Window function '''
     def split_window(self, features):
         inputs = features[:, self.input_slice, :]
