@@ -1,4 +1,5 @@
 
+from os import name
 from pandas.io.stata import StataReader
 import pandas as pd 
 import numpy as np 
@@ -127,7 +128,8 @@ class WindowGenerator():
             self.label_columns_indices = {name:i for i, name in enumerate(label_columns)}
 
         self.column_indices = {name: i for i, name in enumerate(label_columns)}
-
+        print("COLUMN INDICES ATTRIBUTE: ")
+        print(self.column_indices)
         #Set up window parameters.
         self.input_width = input_width
         self.label_width = label_width 
@@ -149,11 +151,38 @@ class WindowGenerator():
             f'Label indices: {self.label_indices}',
             f'Label column name(s): {self.label_columns}'
         ])
+    @property
+    def train(self):
+    return self.make_dataset(self.train_df)
 
+    @property
+    def val(self):
+    return self.make_dataset(self.val_df)
+
+    @property
+    def test(self):
+    return self.make_dataset(self.test_df)
+
+    @property
+    def example(self):
+    """Get and cache an example batch of `inputs, labels` for plotting."""
+    result = getattr(self, '_example', None)
+    if result is None:
+        # No example batch was found, so get one from the `.train` dataset
+        result = next(iter(self.train))
+        # And cache it for next time
+        self._example = result
+    return result
+
+    WindowGenerator.train = train
+    WindowGenerator.val = val
+    WindowGenerator.test = test
+    WindowGenerator.example = example
     '''Split Window function '''
     def split_window(self, features):
         inputs = features[:, self.input_slice, :]
         labels = features[:, self.labels_slice, :]
+       # print(self.column_indices[name])
         if self.label_columns is not None:
             labels = tf.stack(
                 [labels[:,:, self.column_indices[name]] for name in self.label_columns],
@@ -200,18 +229,18 @@ class WindowGenerator():
 
 
 '''Create two windows'''
-w1 = WindowGenerator(input_width=24, label_width=1, shift=24,
+w1 = WindowGenerator(input_width=1, label_width=1, shift=1,
 label_columns = columns)
 
-w2 = WindowGenerator(input_width=6, label_width=1, shift = 1, label_columns=columns)
+w2 = WindowGenerator(input_width=1, label_width=1, shift=1, label_columns=columns)
 
 
 test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
-                        np.array(training_df[100:100+w2.total_window_size]),
-                        np.array(training_df[200:200+w2.total_window_size])
+                        np.array(training_df[10:10+w2.total_window_size]),
+                        np.array(training_df[20:20+w2.total_window_size])
                         ])
 
-example_inputs, example_labels = w2.split_window(test_window)
+#example_inputs, example_labels = w2.split_window(test_window)
 w2.plot()
 
 print("All shapes are: (batch, time, features)") 
