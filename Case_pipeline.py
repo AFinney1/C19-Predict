@@ -1,8 +1,8 @@
 import pandas as pd 
 import numpy as np 
 #import conducto as C
-from tkinter import Tk
 #import streamlit as st
+import tkinter
 from tkinter import filedialog
 
 
@@ -15,9 +15,10 @@ def get_cases():
                                         ("all files",
                                         "*.*")))
     #label_file_explorer.configure(text="File Opened: "+f)
-    window = Tk()
+    window = tkinter.Tk()
     window.title("Case data explorer")
     case_df = pd.read_csv(str(f))
+    window.destroy()
     return case_df
 
 

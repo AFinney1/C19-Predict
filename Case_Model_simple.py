@@ -1,5 +1,6 @@
 
 #from os import name
+from tensorflow.python.keras.losses import MeanAbsoluteError
 from pandas.io.stata import StataReader
 import pandas as pd 
 import numpy as np 
@@ -163,7 +164,7 @@ class WindowGenerator():
             sequence_stride=1,
             shuffle=True,
             batch_size=32,)
-        ds = ds.map(self.split_window)
+       # ds = ds.map(self.split_window)
 
         return ds
 
@@ -192,54 +193,7 @@ class WindowGenerator():
 
 
     '''Split Window function '''
-    def split_window(self, features):
-        inputs = features[:, self.input_slice, :]
-        labels = features[:, self.labels_slice, :]
-       # print(self.column_indices[name])
-        if self.label_columns is not None:
-            labels = tf.stack(
-                [labels[:,:, self.column_indices[name]] for name in self.label_columns],
-                axis = -1)
-
-        inputs.set_shape([None, self.input_width, None])
-        labels.set_shape([None, self.label_width, None])
-
-        return inputs, labels
-
-
-
-    def plot(self, model=None, plot_col=columns, max_subplots = 3):
-        inputs, labels = self.example
-        plt.figure(figsize = (12,8))
-        plot_col_index = self.column_indices[plot_col]
-        max_n = min(max_subplots, len(inputs))
-        for n in range(max_n):
-            plt.subplot(3, 1, n+1)
-            plt.ylabel(f'{plot_col} [normed]')
-            plt.plot(self.input_indices, inputs[n, :, plot_col_index],
-                    label='Inputs', marker=',', zorder=-10)
-
-            if self.label_columns:
-                label_col_index = self.label_columns_indices.get(plot_col, None)
-            else: 
-                label_col_index = plot_col_index 
-
-            if label_col_index is None:
-                continue 
-
-            plt.scatter(self.label_indices, labels[n, :, label_col_index],
-                        edgecolors='k', label='Labels', c='#2ca02c', s=64)
-            if model is not None:
-                predictions = model(inputs)
-                plt.scatter(self.label_indices, predictions[n, :, label_col_index],
-                            marker='X', edgecolors='k', label='Predictions',
-                            c='#ff7f0e', s=64)
-
-            if n==0:
-                plt.legend()
-
-    plt.xlabel("Date")
-
+  
 
 '''Create two windows'''
 w1 = WindowGenerator(input_width=1, label_width=1, shift=1,
@@ -254,7 +208,7 @@ test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
                         ])
 
 #example_inputs, example_labels = w2.split_window(test_window)
-w2.plot()
+
 
 print("All shapes are: (batch, time, features)") 
 print(f'Window shape: {test_window.shape}')
@@ -276,9 +230,12 @@ model.add(layers.LSTM(128))
 model.add(layers.Dense(10))
 model.summary()
 
+model.compile(loss = tf.losses.MeanSquaredError(),
+            optimizer = tf.optimizers.Adam(),
+            metrics = [tf.metrics.MeanAbsoluteError()])
 
 
-
+model.fit(w2.train, batch_size = 32, )
 
 
 
