@@ -76,9 +76,9 @@ plt.show()
 
 '''Training, Validation, and Test Split'''
 county_length = len(county)
-training_df = county[0:int(county_length*0.402)]
-val_df = county[int(county_length*0.4):int(county_length*0.8)]
-test_df = county[int(county_length*0.8):]
+training_df = county[0:int(county_length*0.6)]
+val_df = county[int(county_length*0.4):int(county_length*0.6)]
+test_df = county[int(county_length*0.6):]
 
 num_feature_days = county.shape[0]
 print("Number of Days:", str(num_feature_days))
@@ -99,6 +99,7 @@ test_df = normalize(test_df)
 '''Peek at the dataset's distribution of features'''
 case_df.drop(columns[5:10], inplace = True, axis = 1)
 print(case_df)
+'''
 case_df_std = pd.DataFrame(normalize(training_std))
 case_df_std = case_df_std.melt(var_name = 'Day', value_name = 'Normalized Cases')
 plt.figure(figsize=(12,6))
@@ -108,7 +109,7 @@ ax = sns.violinplot(x = "Day", y = 'Normalized Cases', data = case_df_std)
 
 #plot_features = region[region_col_ax]
 #_ = plot_features.plot()
-
+'''
 
 #case_dataset = tf.data.Dataset.from_tensor_slices(case_df)
 #print(case_dataset)
@@ -227,7 +228,7 @@ model.add(layers.Embedding(input_dim=1000, output_dim=64), )
 # Add a LSTM layer with 128 internal units.
 model.add(layers.LSTM(128))
 # Add a Dense layer with 10 units.
-model.add(layers.Dense(10))
+model.add(layers.Dense(61))
 model.summary()
 
 y_pred = model.predict(test_df)
@@ -240,18 +241,26 @@ model.compile(loss = tf.losses.MeanSquaredError(),
             metrics = [tf.metrics.MeanAbsoluteError()])
 
 x = training_df.to_numpy()
-#x = x.reshape(1,-1)
+x = x.reshape(1,-1)
 y = val_df.to_numpy()
-
-
-#y = y.reshape(1,-1)
+y = y.reshape(1,-1)
 
 print(x.shape)
 print(y.shape)
 model.fit(x, 
         y,
         batch_size = 32,
-        epochs = 2 )
+        epochs = 100)
 
 
+y_pred2 = pd.DataFrame(model.predict(test_df))
 
+y_pred2 = y_pred2.T
+
+y_pred2.plot(
+    title = ("Projected confirmed cases " + county_name + " county"),
+    legend = [county_name],
+    xlabel = "Date",
+    ylabel = 'Projected Confirmed Cases')
+plt.legend([county_name])
+plt.show()
