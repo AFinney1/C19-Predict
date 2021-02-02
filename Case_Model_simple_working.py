@@ -91,10 +91,18 @@ print("TYPES: \n",type(training_std))
 def normalize(df):
     normed_df = (df - training_mean)/training_std
     return normed_df
+
+
 training_df = normalize(training_df)
 print(type(training_df))
 val_df = normalize(val_df)
 test_df = normalize(test_df)
+
+'''Denormalization'''
+def denormalize(df):
+    denormalized_df = training_std.values/(df.values - training_mean.values)
+    return denormalized_df
+
 
 '''Peek at the dataset's distribution of features'''
 case_df.drop(columns[5:10], inplace = True, axis = 1)
@@ -227,8 +235,8 @@ model = tf.keras.Sequential()
 model.add(layers.Embedding(input_dim=1000, output_dim=64), )
 # Add a LSTM layer with 128 internal units.
 model.add(layers.LSTM(128))
-# Add a Dense layer with 10 units.
-model.add(layers.Dense(61))
+# Add a Dense layer with 1 unit.
+model.add(layers.Dense(1))
 model.summary()
 
 y_pred = model.predict(test_df)
@@ -247,18 +255,21 @@ y = y.reshape(1,-1)
 
 print(x.shape)
 print(y.shape)
+
 model.fit(x, 
         y,
         batch_size = 32,
-        epochs = 100)
+        epochs = 1)
 
 
-y_pred2 = pd.DataFrame(model.predict(test_df))
+y_pred = pd.DataFrame(model.predict(test_df))
+ #y_pred.reshape(-1,1)
+y_pred2= pd.DataFrame(denormalize(y_pred))
+#y_pred2 = y_pred2.T
 
-y_pred2 = y_pred2.T
-
+#y_pred2 = pd.DataFrame(model.predict(test_df))
 y_pred2.plot(
-    title = ("Projected confirmed cases " + county_name + " county"),
+    title = ("Projected confirmed cases in " + county_name + " county"),
     legend = [county_name],
     xlabel = "Date",
     ylabel = 'Projected Confirmed Cases')
