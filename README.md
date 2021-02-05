@@ -1,6 +1,6 @@
 # C19-Predict
 
-This project is a rudimentary attempt to build a COVID-19 case predition system primarily using TensorFlow and Keras.
+This project is a rudimentary attempt to build a COVID-19 case prediction system primarily using TensorFlow and Keras.
 Utilizing a simple LSTM neural network architecture, the script trains models on confirmed COVID-19 cases.
 
 The neural network architecture and some of the feature engineering code are referenced and inspired from:   https://www.tensorflow.org/tutorials/structured_data/time_series 
