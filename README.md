@@ -11,7 +11,7 @@ This project is still a very early work in progress.
 
 Future changes to the project will include:
 
-- statistical comparisons to mainstream case projections
+- statistical comparisons of this project to mainstream case projections
 - automated dataset updates to compare past predictions with recent data 
-- improved user interface (first CLI, then 
+- improved user interface (first CLI, then a GUI will be developed)
 - add cloud hosting for training new models from devices without GPUs
