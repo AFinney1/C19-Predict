@@ -34,7 +34,7 @@ case_df.drop(columns[:5],inplace=True, axis = 1)
 print("Days only case dataframe: ", case_df)
 #Train, test, split
 
-#from sklearn.model_selection import train_test_split
+#from sklearn.time_series_model_selection import train_test_split
 
 #regions = case_df.groupby("Province_State")['Mississippi'].plot(kind = 'line')
 #
@@ -228,23 +228,23 @@ print(f'Window shape: {test_window.shape}')
 
 
 
-"Modeling"
-model = tf.keras.Sequential()
+"time_series_modeling"
+time_series_model = tf.keras.Sequential()
 # Add an Embedding layer expecting input vocab of size 1000, and
 # output embedding dimension of size 64.
-model.add(layers.Embedding(input_dim=1000, output_dim=64), )
+time_series_model.add(layers.Embedding(input_dim=1000, output_dim=64), )
 # Add a LSTM layer with 128 internal units.
-model.add(layers.LSTM(128))
+time_series_model.add(layers.LSTM(128))
 # Add a Dense layer with 1 unit.
-model.add(layers.Dense(1))
-model.summary()
+time_series_model.add(layers.Dense(1))
+time_series_model.summary()
 
-y_pred = model.predict(test_df)
+y_pred = time_series_model.predict(test_df)
 
 with tf.GradientTape() as tape:
     loss = tf.keras.backend.mean(tf.keras.backend.mean(tf.keras.losses.mse(y_true = test_df, y_pred = y_pred)))
 
-model.compile(loss = tf.losses.MeanSquaredError(),
+time_series_model.compile(loss = tf.losses.MeanSquaredError(),
             optimizer = tf.optimizers.Adam(),
             metrics = [tf.metrics.MeanAbsoluteError()])
 
@@ -256,18 +256,26 @@ y = y.reshape(1,-1)
 print(x.shape)
 print(y.shape)
 
-model.fit(x, 
+
+"""Model training"""
+time_series_model.fit(x, 
         y,
         batch_size = 32,
         epochs = 1)
 
 
-y_pred = pd.DataFrame(model.predict(test_df))
+"""Model saving"""
+time_series_model.save()
+
+
+
+"""Model Prediction and Plotting"""
+y_pred = pd.DataFrame(time_series_model.predict(test_df))
  #y_pred.reshape(-1,1)
 y_pred2= pd.DataFrame(denormalize(y_pred))
 #y_pred2 = y_pred2.T
 
-#y_pred2 = pd.DataFrame(model.predict(test_df))
+#y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
 y_pred2.plot(
     title = ("Projected confirmed cases in " + county_name + " county"),
     legend = [county_name],
