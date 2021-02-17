@@ -1,36 +1,39 @@
 
 #from os import name
-from tensorflow.python.keras.losses import MeanAbsoluteError
-from pandas.io.stata import StataReader
-import pandas as pd 
-import numpy as np 
-import matplotlib
+
+from datetime import datetime, timezone
+#import streamlit as st
 #from matplotlib import pyplot as plt
 #import conducto as C
-from tkinter import Tk
-#import streamlit as st
-from tkinter import filedialog
-from Case_pipeline import get_cases 
+from tkinter import Tk, filedialog
+
+import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+import sklearn
 import tensorflow as tf
+from pandas.io.stata import StataReader
 from tensorflow import keras
 from tensorflow.keras import layers
-import sklearn 
+from tensorflow.python.keras.losses import MeanAbsoluteError
 
-#Data importation test
+from Case_pipeline import get_cases
+
+# Data importation test
 case_df = get_cases()
 
 print("Case DataFrame: ", case_df)
-print("\nShape of case dataframe",case_df.shape)
+print("\nShape of case dataframe", case_df.shape)
 columns = case_df.columns
 print("\nColumns of case dataframe: ", columns)
-print("\nUnique values for each variable:\n",case_df.nunique(axis=0))
+print("\nUnique values for each variable:\n", case_df.nunique(axis=0))
 #print("\nCase DataFrame Description: \n", case_df.describe())
 #case_df = case_df.T
 fips_list = case_df['FIPS']
 print(case_df)
-case_df.drop(columns[:5],inplace=True, axis = 1)
+case_df.drop(columns[:5], inplace=True, axis=1)
 print("Days only case dataframe: ", case_df)
 #Train, test, split
 
@@ -44,7 +47,7 @@ print("Days only case dataframe: ", case_df)
 region_col = list(case_df.columns.values)
 #region_col_ax = region_col.remove("Province_State")
 region_col_ax = region_col[11:]
-#print(region_col_ax)
+# print(region_col_ax)
 
 plot_cols = region_col_ax
 region = case_df.loc[case_df['Province_State'] == 'Mississippi']
@@ -55,21 +58,23 @@ county_list = region['Admin2']
 county = region.loc[region['Admin2'] == county_name]
 print(county)
 columns = columns[5:11]
-county.drop(columns, inplace = True, axis = 1)
+
+county.drop(columns, inplace=True, axis=1)
 
 date_index = range(len(county))
 
 county = county.transpose()
-#county.reindex(date_index)
+
+# county.reindex(date_index)
 #county = county.reset_index(drop=True)
 print(county)
 #county.plot(y = region_col_ax)
-#plt.plot(list(county))
+# plt.plot(list(county))
 county.plot(
-    title = ("Daily cases in " + county_name + " county"),
-    legend = [county_name],
-    xlabel = "Date",
-    ylabel = 'Confirmed Cases')
+    title=("Daily cases in " + county_name + " county"),
+    legend=[county_name],
+    xlabel="Date",
+    ylabel='Confirmed Cases')
 plt.legend([county_name])
 plt.show()
 
@@ -87,7 +92,9 @@ print("Number of Days:", str(num_feature_days))
 '''Normalization'''
 training_mean = training_df.mean()
 training_std = training_df.std()
-print("TYPES: \n",type(training_std))
+print("TYPES: \n", type(training_std))
+
+
 def normalize(df):
     normed_df = (df - training_mean)/training_std
     return normed_df
@@ -99,13 +106,15 @@ val_df = normalize(val_df)
 test_df = normalize(test_df)
 
 '''Denormalization'''
+
+
 def denormalize(df):
     denormalized_df = training_std.values/(df.values - training_mean.values)
     return denormalized_df
 
 
 '''Peek at the dataset's distribution of features'''
-case_df.drop(columns[5:10], inplace = True, axis = 1)
+case_df.drop(columns[5:10], inplace=True, axis=1)
 print(case_df)
 '''
 case_df_std = pd.DataFrame(normalize(training_std))
@@ -120,39 +129,44 @@ ax = sns.violinplot(x = "Day", y = 'Normalized Cases', data = case_df_std)
 '''
 
 #case_dataset = tf.data.Dataset.from_tensor_slices(case_df)
-#print(case_dataset)
+# print(case_dataset)
 '''Data Windowing, heavily referenced from https://www.tensorflow.org/tutorials/structured_data/time_series, maybe modularized later'''
+
+
 class WindowGenerator():
     def __init__(self, input_width, label_width, shift,
-                training_df = training_df, val_df = val_df, test_df = test_df,
-                label_columns = None):
+                 training_df=training_df, val_df=val_df, test_df=test_df,
+                 label_columns=None):
 
-    #raw data
+        # raw data
         self.training_df = training_df
         self.val_df = val_df
-        self.test_df = test_df 
+        self.test_df = test_df
 
-        #Determine label column indices
-        self.label_columns = label_columns 
+        # Determine label column indices
+        self.label_columns = label_columns
         if label_columns is not None:
-            self.label_columns_indices = {name:i for i, name in enumerate(label_columns)}
+            self.label_columns_indices = {
+                name: i for i, name in enumerate(label_columns)}
 
         self.column_indices = {name: i for i, name in enumerate(label_columns)}
         print("COLUMN INDICES ATTRIBUTE: ")
         print(self.column_indices)
-        #Set up window parameters.
+        # Set up window parameters.
         self.input_width = input_width
-        self.label_width = label_width 
-        self.shift = shift 
+        self.label_width = label_width
+        self.shift = shift
 
-        self.total_window_size = input_width + shift 
+        self.total_window_size = input_width + shift
 
         self.input_slice = slice(0, input_width)
-        self.input_indices = np.arange(self.total_window_size)[self.input_slice]
+        self.input_indices = np.arange(self.total_window_size)[
+            self.input_slice]
 
         self.label_start = self.total_window_size - self.label_width
         self.labels_slice = slice(self.label_start, None)
-        self.label_indices = np.arange(self.total_window_size)[self.labels_slice]
+        self.label_indices = np.arange(self.total_window_size)[
+            self.labels_slice]
 
     def __repr__(self):
         return '\n'.join([
@@ -161,8 +175,6 @@ class WindowGenerator():
             f'Label indices: {self.label_indices}',
             f'Label column name(s): {self.label_columns}'
         ])
-
-
 
     def make_dataset(self, data):
         data = np.array(data, dtype=np.float32)
@@ -200,15 +212,15 @@ class WindowGenerator():
             self._example = result
         return result
 
-
     '''Split Window function '''
-  
+
 
 '''Create two windows'''
 w1 = WindowGenerator(input_width=1, label_width=1, shift=1,
-label_columns = columns)
+                     label_columns=columns)
 
-w2 = WindowGenerator(input_width=1, label_width=1, shift=1, label_columns=columns)
+w2 = WindowGenerator(input_width=1, label_width=1,
+                     shift=1, label_columns=columns)
 
 
 test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
@@ -219,13 +231,10 @@ test_window = tf.stack([np.array(training_df[:w2.total_window_size]),
 #example_inputs, example_labels = w2.split_window(test_window)
 
 
-print("All shapes are: (batch, time, features)") 
+print("All shapes are: (batch, time, features)")
 print(f'Window shape: {test_window.shape}')
 #print(f'Inputs shape: {example_inputs.shape}')
 #print(f'Inputs shape: {example_labels.shape}')
-
-
-
 
 
 "time_series_modeling"
@@ -242,44 +251,53 @@ time_series_model.summary()
 y_pred = time_series_model.predict(test_df)
 
 with tf.GradientTape() as tape:
-    loss = tf.keras.backend.mean(tf.keras.backend.mean(tf.keras.losses.mse(y_true = test_df, y_pred = y_pred)))
+    loss = tf.keras.backend.mean(tf.keras.backend.mean(
+        tf.keras.losses.mse(y_true=test_df, y_pred=y_pred)))
 
-time_series_model.compile(loss = tf.losses.MeanSquaredError(),
-            optimizer = tf.optimizers.Adam(),
-            metrics = [tf.metrics.MeanAbsoluteError()])
+time_series_model.compile(loss=tf.losses.MeanSquaredError(),
+                          optimizer=tf.optimizers.Adam(),
+                          metrics=[tf.metrics.MeanAbsoluteError()])
 
 x = training_df.to_numpy()
-x = x.reshape(1,-1)
+x = x.reshape(1, -1)
 y = val_df.to_numpy()
-y = y.reshape(1,-1)
+y = y.reshape(1, -1)
 
 print(x.shape)
 print(y.shape)
 
 
 """Model training"""
-time_series_model.fit(x, 
-        y,
-        batch_size = 32,
-        epochs = 1)
+time_series_model.fit(x,
+                      y,
+                      batch_size=32,
+                      epochs=1)
 
 
 """Model saving"""
-time_series_model.save()
 
 
+def save_function():
+    present = datetime.now()
+    date = datetime.now(tz=timezone.utc).strftime('%a %b %d %H:%M:%S %Z %Y')
+    model_filepath = "~/saved_models/"+str(date)
+    time_series_model.save(model_filepath)
+    return date, model_filepath
+
+
+saved_model = save_function()
 
 """Model Prediction and Plotting"""
 y_pred = pd.DataFrame(time_series_model.predict(test_df))
- #y_pred.reshape(-1,1)
-y_pred2= pd.DataFrame(denormalize(y_pred))
+# y_pred.reshape(-1,1)
+y_pred2 = pd.DataFrame(denormalize(y_pred))
 #y_pred2 = y_pred2.T
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
 y_pred2.plot(
-    title = ("Projected confirmed cases in " + county_name + " county"),
-    legend = [county_name],
-    xlabel = "Date",
-    ylabel = 'Projected Confirmed Cases')
+    title=("Projected confirmed cases in " + county_name + " county"),
+    legend=[county_name],
+    xlabel="Date",
+    ylabel='Projected Confirmed Cases')
 plt.legend([county_name])
-plt.show()
+plt.savefig(saved_model[1])
