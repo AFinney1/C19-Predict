@@ -21,6 +21,7 @@ from tensorflow.python.keras.losses import MeanAbsoluteError
 
 from Case_pipeline import get_cases
 
+
 # Data importation test
 case_df = get_cases()
 
@@ -301,3 +302,4 @@ y_pred2.plot(
     ylabel='Projected Confirmed Cases')
 plt.legend([county_name])
 plt.savefig(saved_model[1])
+plt.show()
