@@ -40,7 +40,7 @@ print("Days only case dataframe: ", case_df)
 
 #from sklearn.time_series_model_selection import train_test_split
 
-#regions = case_df.groupby("Province_State")['Mississippi'].plot(kind = 'line')
+#regions = case_df.groupby("Province_State")['Mississippi'].plot(kind = 'line') 
 #
 
 # regions.apply(print)
@@ -71,13 +71,16 @@ county = county.transpose()
 print(county)
 #county.plot(y = region_col_ax)
 # plt.plot(list(county))
+def county_df():
+    return county
+
 county.plot(
     title=("Daily cases in " + county_name + " county"),
     legend=[county_name],
     xlabel="Date",
     ylabel='Confirmed Cases')
 plt.legend([county_name])
-plt.show()
+#plt.show()
 
 
 '''Training, Validation, and Test Split'''
