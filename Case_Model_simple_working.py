@@ -21,7 +21,6 @@ from tensorflow.python.keras.losses import MeanAbsoluteError
 
 from Case_pipeline import get_cases
 
-
 # Data importation test
 case_df = get_cases()
 

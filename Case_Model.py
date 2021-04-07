@@ -240,7 +240,6 @@ class WindowGenerator():
 
     plt.xlabel("Date")
 
-
 '''Create two windows'''
 w1 = WindowGenerator(input_width=1, label_width=1, shift=1,
 label_columns = columns)
