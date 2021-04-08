@@ -28,7 +28,7 @@ from Case_pipeline import get_cases
 case_df = get_cases()
 columns = case_df.columns
 print("Days only case dataframe: ", case_df)
-
+print(case_df)
 
 
 
@@ -40,54 +40,32 @@ def main():
     #print("\nCase DataFrame Description: \n", case_df.describe())
     #case_df = case_df.T
     fips_list = case_df['FIPS']
-print(case_df)
 
-def preprocessing():
+
+def preprocessing(case_df):
+    print("Preprocessing...")
     case_df.drop(columns[:5], inplace=True, axis=1)
-#Train, test, split
-
-#from sklearn.time_series_model_selection import train_test_split
-
-#regions = case_df.groupby("Province_State")['Mississippi'].plot(kind = 'line') 
-#
-
-# regions.apply(print)
-
-region_col = list(case_df.columns.values)
-#region_col_ax = region_col.remove("Province_State")
-region_col_ax = region_col[11:]
-# print(region_col_ax)
-
-plot_cols = region_col_ax
-region = case_df.loc[case_df['Province_State'] == 'Mississippi']
-print(region)
-
-county_name = "Rankin"
-county_list = region['Admin2']
-county = region.loc[region['Admin2'] == county_name]
-print(county)
-columns = columns[5:11]
-
-county.drop(columns, inplace=True, axis=1)
-
-date_index = range(len(county))
-
-county = county.transpose()
-
-# county.reindex(date_index)
-#county = county.reset_index(drop=True)
-print(county)
-#county.plot(y = region_col_ax)
-# plt.plot(list(county))
-def county_df():
-    return county
-
-county.plot(
-    title=("Daily cases in " + county_name + " county"),
-    legend=[county_name],
-    xlabel="Date",
-    ylabel='Confirmed Cases')
-plt.legend([county_name])
+    region_col = list(case_df.columns.values)
+    region_col_ax = region_col[11:]
+    plot_cols = region_col_ax
+    region = case_df.loc[case_df['Province_State'] == 'Mississippi']
+    print(region)
+    county_name = "Rankin"
+    county_list = region['Admin2']
+    county = region.loc[region['Admin2'] == county_name]
+    columns = columns[5:11]
+    county.drop(columns, inplace=True, axis=1)
+    date_index = range(len(county))
+    county = county.transpose()
+    def plot_county_cases():
+        county.plot(
+            title=("Daily cases in " + county_name + " county"),
+            legend=[county_name],
+            xlabel="Date",
+            ylabel='Confirmed Cases')
+        plt.legend([county_name])
+    county_plot = plot_county_cases
+    return region_col, region_col_ax, region, county
 #plt.show()
 
 
@@ -96,21 +74,21 @@ county_length = len(county)
 training_df = county[0:int(county_length*0.6)]
 val_df = county[int(county_length*0.4):int(county_length*0.6)]
 test_df = county[int(county_length*0.6):]
-
 num_feature_days = county.shape[0]
 print("Number of Days:", str(num_feature_days))
 
 
-'''Normalization'''
+
 training_mean = training_df.mean()
 training_std = training_df.std()
 print("TYPES: \n", type(training_std))
-
 
 def normalize(df):
     normed_df = (df - training_mean)/training_std
     return normed_df
 
+
+'''Normalization'''
 training_df = normalize(training_df)
 print(type(training_df))
 val_df = normalize(val_df)
