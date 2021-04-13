@@ -25,21 +25,9 @@ from Case_pipeline import get_cases
 
 
 
-case_df = get_cases()
-columns = case_df.columns
-print("Days only case dataframe: ", case_df)
-print(case_df)
 
 
 
-def main():
-    print("Case DataFrame: ", case_df)
-    print("\nShape of case dataframe", case_df.shape)
-    print("\nColumns of case dataframe: ", columns)
-    print("\nUnique values for each variable:\n", case_df.nunique(axis=0))
-    #print("\nCase DataFrame Description: \n", case_df.describe())
-    #case_df = case_df.T
-    fips_list = case_df['FIPS']
 
 
 def preprocessing(case_df):
@@ -57,25 +45,25 @@ def preprocessing(case_df):
     county.drop(columns, inplace=True, axis=1)
     date_index = range(len(county))
     county = county.transpose()
-    def plot_county_cases():
-        county.plot(
-            title=("Daily cases in " + county_name + " county"),
-            legend=[county_name],
-            xlabel="Date",
-            ylabel='Confirmed Cases')
-        plt.legend([county_name])
-    county_plot = plot_county_cases
     return region_col, region_col_ax, region, county
+def plot_county_cases():
+    county.plot(
+        title=("Daily cases in " + county_name + " county"),
+        legend=[county_name],
+        xlabel="Date",
+        ylabel='Confirmed Cases')
+    plt.legend([county_name])
 #plt.show()
 
 
 '''Training, Validation, and Test Split'''
-county_length = len(county)
-training_df = county[0:int(county_length*0.6)]
-val_df = county[int(county_length*0.4):int(county_length*0.6)]
-test_df = county[int(county_length*0.6):]
-num_feature_days = county.shape[0]
-print("Number of Days:", str(num_feature_days))
+def train_test_val_split():
+    county_length = len(county)
+    training_df = county[0:int(county_length*0.6)]
+    val_df = county[int(county_length*0.4):int(county_length*0.6)]
+    test_df = county[int(county_length*0.6):]
+    num_feature_days = county.shape[0]
+    print("Number of Days:", str(num_feature_days))
 
 
 
