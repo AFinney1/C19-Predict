@@ -31,11 +31,12 @@ def preprocessing(case_df):
     region_col = list(case_df.columns.values)
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
-    state_name = input("Enter state name")
+    state_name = input("Enter state name ") or 'Mississippi'
     region = case_df.loc[case_df['Province_State'] == state_name]
     print(region)
-    county_name = input("Enter county name")
     county_list = region['Admin2']
+    default_county = county_list.iloc[0]
+    county_name = input("Enter county name ") or default_county   
     county = region.loc[region['Admin2'] == county_name]
     columns = columns[5:11]
     county.drop(columns, inplace=True, axis=1)
@@ -55,7 +56,8 @@ def plot_county_cases(county, county_name):
 
 
 '''Training, Validation, and Test Split'''
-def train_test_val_split(preprocessed_data, county):
+def train_test_val_split(preprocessed_data):
+    county = preprocessed_data[3]
     county_length = len(county)
     training_df = county[0:int(county_length*0.6)]
     val_df = county[int(county_length*0.4):int(county_length*0.6)]
@@ -65,7 +67,7 @@ def train_test_val_split(preprocessed_data, county):
     training_mean = training_df.mean()
     training_std = training_df.std()
     print("TYPES: \n", type(training_std))
-    return(training_df, val_df, test_df, training_std)
+    return(training_df, val_df, test_df, training_mean, training_std)
 
 def normalize(df, training_mean, training_std):
     normed_df = (df - training_mean)/training_std
@@ -73,7 +75,7 @@ def normalize(df, training_mean, training_std):
 
 
 '''Denormalization'''
-def denormalize(df, training_std, training_mean):
+def denormalize(df, training_mean, training_std ):
     denormalized_df = training_std.values/(df.values - training_mean.values)
     return denormalized_df
 
@@ -121,9 +123,9 @@ def model_save_function(time_series_model):
 """Model Prediction and Plotting"""
 
 # y_pred.reshape(-1,1)
-def test_predictions(time_series_model, test_df):
+def test_predictions(time_series_model, test_df, training_mean, training_std):
     model_output = pd.DataFrame(time_series_model.predict(test_df))
-    denorm_predictions = pd.DataFrame(denormalize(model_output))
+    denorm_predictions = pd.DataFrame(denormalize(model_output, training_mean, training_std))
     return(denorm_predictions)
 #y_pred2 = y_pred2.T
 
@@ -136,19 +138,22 @@ def plot_case_predictions(predictions, county_name, saved_model):
         ylabel='Projected Confirmed Cases')
     plt.legend([county_name])
     plt.savefig(saved_model[1])
-    plt.show()
+    plt.savefig("Predicted Cases")
+    fig = plt.figure()
+    return fig
 
 def main():
     case_df = get_cases()
     preprocessed_data = preprocessing(case_df)
-    training_df, val_df, test_df = train_test_val_split(preprocessed_data=preprocessed_data)
-    training_df = normalize(training_df)
-    val_df = normalize(val_df)
-    test_df = normalize(test_df)
+    county_name = preprocessed_data[-1]
+    training_df, val_df, test_df, training_mean, training_std = train_test_val_split(preprocessed_data=preprocessed_data)
+    training_df = normalize(training_df, training_mean, training_std)
+    val_df = normalize(val_df, training_mean, training_std)
+    test_df = normalize(test_df, training_mean, training_std)
     model = build_time_series_model(test_df, training_df, val_df)
     saved_model = model_save_function(model)
-    test_predictions(model, test_df)
-    
+    model_test= test_predictions(model, test_df, training_mean, training_std)
+    plot_case_predictions(model_test, county_name, saved_model)
 
 
 
