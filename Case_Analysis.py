@@ -18,7 +18,7 @@ from pandas.io.stata import StataReader
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.python.keras.losses import MeanAbsoluteError
-
+import streamlit as st
 from Case_pipeline import get_cases
 
 # Data importation test
@@ -31,12 +31,13 @@ def preprocessing(case_df):
     region_col = list(case_df.columns.values)
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
-    state_name = input("Enter state name ") or 'Mississippi'
+    state_name = st.text_input("Enter state name ", 'Mississippi') #or 'Mississippi'
     region = case_df.loc[case_df['Province_State'] == state_name]
     print(region)
+    st.write(region)
     county_list = region['Admin2']
     default_county = county_list.iloc[0]
-    county_name = input("Enter county name ") or default_county   
+    county_name = st.text_input("Enter county name ", "Hinds")# or default_county   
     county = region.loc[region['Admin2'] == county_name]
     columns = columns[5:11]
     county.drop(columns, inplace=True, axis=1)
@@ -76,7 +77,8 @@ def normalize(df, training_mean, training_std):
 
 '''Denormalization'''
 def denormalize(df, training_mean, training_std ):
-    denormalized_df = training_std.values/(df.values - training_mean.values)
+    #denormalized_df = training_std.values/(df.values - training_mean.values)
+    denormalized_df = training_std.values*df.values + training_mean.values
     return denormalized_df
 
 
@@ -131,16 +133,23 @@ def test_predictions(time_series_model, test_df, training_mean, training_std):
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
 def plot_case_predictions(predictions, county_name, saved_model):
+    import matplotlib.pyplot as plt
+    import streamlit as st
     predictions.plot(
-        title=("Projected confirmed cases in " + county_name + " county"),
+        title=("Projected COVID-19 cases in " + county_name + " county"),
         legend=[county_name],
         xlabel="Date",
-        ylabel='Projected Confirmed Cases')
+        ylabel='Projected Covid-19 Cases')
     plt.legend([county_name])
-    plt.savefig(saved_model[1])
-    plt.savefig("Predicted Cases")
-    fig = plt.figure()
-    return fig
+    plt.autofmt_xdate()
+   # plt.savefig(saved_model[1])
+    #plt.savefig("Predicted Cases")
+    #fig = plt.figure()
+
+    st.set_option("deprecation.showPyplotGlobalUse", False)
+    st.pyplot()
+    st.map()
+   
 
 def main():
     case_df = get_cases()

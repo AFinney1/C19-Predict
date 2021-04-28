@@ -4,9 +4,7 @@ import tkinter
 import matplotlib
 matplotlib.use("Tkagg")
 
-st.write("""
-# COVID-19 Confirmed Case Projection App
-""")
+st.title(""" COVID-19 Confirmed Case Projection App""")
 
 case_df = get_cases()
 st.write(case_df)
@@ -19,9 +17,9 @@ test_df = normalize(test_df, training_mean, training_std)
 model = build_time_series_model(test_df, training_df, val_df)
 saved_model = model_save_function(model)
 model_test= test_predictions(model, test_df, training_mean, training_std)
-predicted_cases = plot_case_predictions(model_test, county_name, saved_model)
-st.write(predicted_cases)
+#predicted_cases = plot_case_predictions(model_test, county_name, saved_model)
+plot_case_predictions(model_test, county_name, saved_model)
 
-st.write(predicted_cases)
+
 
 
