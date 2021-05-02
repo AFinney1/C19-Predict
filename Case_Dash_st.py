@@ -8,8 +8,8 @@ import pydeck as pdk
 matplotlib.use("Tkagg")
 
 st.title(""" COVID-19 Case Projection App""")
-st.map(case_df)
 case_df = get_cases()
+st.map(case_df)
 st.write(case_df)
 preprocessed_data = preprocessing(case_df)
 county_name = preprocessed_data[-2]
