@@ -9,6 +9,7 @@ matplotlib.use("Tkagg")
 
 st.title(""" COVID-19 Case Projection App""")
 case_df = get_cases()
+case_df.rename(columns = {'Lat':'lat', 'Long_':'lon'}, inplace = True)
 st.map(case_df)
 st.write(case_df)
 preprocessed_data = preprocessing(case_df)
