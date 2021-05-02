@@ -32,6 +32,7 @@ def preprocessing(case_df):
     region_col = list(case_df.columns.values)
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
+    st.text("Case database last updated: " + str(case_df.columns[-1]))
     state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
     region = case_df.loc[case_df['Province_State'] == state_name]
     print(region)
