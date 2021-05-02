@@ -8,6 +8,7 @@ import pydeck as pdk
 matplotlib.use("Tkagg")
 
 st.title(""" COVID-19 Case Projection App""")
+st.subheader("All U.S. Cases")
 case_df = get_cases()
 case_df.rename(columns = {'Lat':'lat', 'Long_':'lon'}, inplace = True)
 st.map(case_df)
@@ -29,7 +30,7 @@ selected_region = preprocessed_data[2]
 print(selected_region, type(selected_region))
 selected_region.rename(columns = {'Lat':'lat', 'Long_':'lon'}, inplace = True)
 case_df.rename(columns = {'Lat':'lat', 'Long_':'lon'}, inplace = True)
-
+st.subheader("Projected Case Map (in development)")
 st.pydeck_chart(pdk.Deck(
     map_style='mapbox://styles/mapbox/light-v10',
     initial_view_state=pdk.ViewState(
