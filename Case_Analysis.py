@@ -18,7 +18,7 @@ from pandas.io.stata import StataReader
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.python.keras.losses import MeanAbsoluteError
-
+import streamlit as st
 from Case_pipeline import get_cases
 
 # Data importation test
@@ -27,21 +27,26 @@ from Case_pipeline import get_cases
 def preprocessing(case_df):
     print("Preprocessing...")
     columns = case_df.columns
+    #datecolumns = case_df.columns()
     case_df.drop(columns[:5], inplace=True, axis=1)
     region_col = list(case_df.columns.values)
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
-    state_name = input("Enter state name")
+    st.text("Case database last updated: " + str(case_df.columns[-1]))
+    state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
     region = case_df.loc[case_df['Province_State'] == state_name]
     print(region)
-    county_name = input("Enter county name")
+    st.write(region)
     county_list = region['Admin2']
+    default_county = county_list.iloc[0]
+    county_name = st.text_input("Enter county name ", )#"Hinds")# or default_county   
     county = region.loc[region['Admin2'] == county_name]
     columns = columns[5:11]
     county.drop(columns, inplace=True, axis=1)
     date_index = range(len(county))
     county = county.transpose()
-    return region_col, region_col_ax, region, county, county_name
+    lastdate = (str(region.columns[-1]))
+    return region_col, region_col_ax, region, county, county_name, lastdate
 
 def plot_county_cases(county, county_name):
     case_plot = county.plot(
@@ -55,7 +60,8 @@ def plot_county_cases(county, county_name):
 
 
 '''Training, Validation, and Test Split'''
-def train_test_val_split(preprocessed_data, county):
+def train_test_val_split(preprocessed_data):
+    county = preprocessed_data[3]
     county_length = len(county)
     training_df = county[0:int(county_length*0.6)]
     val_df = county[int(county_length*0.4):int(county_length*0.6)]
@@ -65,7 +71,7 @@ def train_test_val_split(preprocessed_data, county):
     training_mean = training_df.mean()
     training_std = training_df.std()
     print("TYPES: \n", type(training_std))
-    return(training_df, val_df, test_df, training_std)
+    return(training_df, val_df, test_df, training_mean, training_std)
 
 def normalize(df, training_mean, training_std):
     normed_df = (df - training_mean)/training_std
@@ -73,8 +79,9 @@ def normalize(df, training_mean, training_std):
 
 
 '''Denormalization'''
-def denormalize(df, training_std, training_mean):
-    denormalized_df = training_std.values/(df.values - training_mean.values)
+def denormalize(df, training_mean, training_std ):
+    #denormalized_df = training_std.values/(df.values - training_mean.values)
+    denormalized_df = training_std.values*df.values + training_mean.values
     return denormalized_df
 
 
@@ -121,38 +128,70 @@ def model_save_function(time_series_model):
 """Model Prediction and Plotting"""
 
 # y_pred.reshape(-1,1)
-def test_predictions(time_series_model, test_df):
+def test_predictions(time_series_model, test_df, training_mean, training_std):
     model_output = pd.DataFrame(time_series_model.predict(test_df))
-    denorm_predictions = pd.DataFrame(denormalize(model_output))
+    denorm_predictions = pd.DataFrame(denormalize(model_output, training_mean, training_std))
     return(denorm_predictions)
 #y_pred2 = y_pred2.T
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
-def plot_case_predictions(predictions, county_name, saved_model):
-    predictions.plot(
-        title=("Projected confirmed cases in " + county_name + " county"),
-        legend=[county_name],
-        xlabel="Date",
-        ylabel='Projected Confirmed Cases')
+def plot_case_predictions(predictions, county_name, saved_model, lastdate):
+    import matplotlib.pyplot as plt
+    from matplotlib import dates as mdates
+    import streamlit as st
+    from datetime import datetime
+    import seaborn as sns
+    sns.set_theme()
+    #dates.DayLocator(bymonthday = range(1,182), interval = len(predictions))
+    print("THIS IS MY LASTDATE VARIABLE: ", lastdate,  type(lastdate))
+    datearray = pd.date_range(start = lastdate, end = "03-21-21", freq = 'D').strftime("%m-%d-%Y")
+    #tickvalues = list(range(predictions))
+    print("THIS IS THE DATEARRAY ",datearray)
+
+   # plt.axis(xmin = 0, xmax = 10)
+    predictions = predictions.T
+    predictions.columns=datearray.tolist()
+    predictions = predictions.T
+    #predictions.reset_index()
+  #  predictions.set_index(datearray)
+
+    plt.plot(predictions)
+    plt.title("Projected COVID-19 cases in " + county_name + " county")
+    plt.xlabel("Date")
+    plt.ylabel("Projected COVID-19 cases in " + county_name + " county")
+    plt.xticks(np.arange(0, 150, 10.0))
+    #plt.ylim([0, int(predictions.max())])
     plt.legend([county_name])
-    plt.savefig(saved_model[1])
-    plt.show()
+    #plt.locator_params(axis = 'x', nbins=len(predictions)/10)
+   # ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%Y'))
+    plt.gcf().autofmt_xdate()
+    #plt.show()
+    #plt.autofmt_xdate()
+   # plt.savefig(saved_model[1])
+    #plt.savefig("Predicted Cases")
+    #fig = plt.figure()
+
+    st.set_option("deprecation.showPyplotGlobalUse", False)
+    st.pyplot()
+  
+    
+   
 
 def main():
     case_df = get_cases()
     preprocessed_data = preprocessing(case_df)
-    training_df, val_df, test_df = train_test_val_split(preprocessed_data=preprocessed_data)
-    training_df = normalize(training_df)
-    val_df = normalize(val_df)
-    test_df = normalize(test_df)
+    county_name = preprocessed_data[-2]
+    lastdate = preprocessed_data[-1]
+    training_df, val_df, test_df, training_mean, training_std = train_test_val_split(preprocessed_data=preprocessed_data)
+    training_df = normalize(training_df, training_mean, training_std)
+    val_df = normalize(val_df, training_mean, training_std)
+    test_df = normalize(test_df, training_mean, training_std)
     model = build_time_series_model(test_df, training_df, val_df)
     saved_model = model_save_function(model)
-    test_predictions(model, test_df)
-    
-
-
-
-    '''Normalization'''
+    model_test= test_predictions(model, test_df, training_mean, training_std)
+    print(model_test)
+    plot_case_predictions(model_test, county_name, saved_model, lastdate)
  
 
 if __name__ == "__main__":
