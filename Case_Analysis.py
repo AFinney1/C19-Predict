@@ -119,7 +119,7 @@ def build_time_series_model(test_df, training_df, val_df):
 def model_save_function(time_series_model):
     present = datetime.now()
     date = datetime.now(tz=timezone.utc).strftime('%a %b %d %H:%M:%S %Z %Y')
-    model_filepath = "/saved_models/"+str(date)
+    model_filepath = 'saved_models'#"/saved_models/"+str(date)
     time_series_model.save(model_filepath)
     return date, model_filepath
 
