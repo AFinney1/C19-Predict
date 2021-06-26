@@ -63,9 +63,9 @@ def plot_county_cases(county, county_name):
 def train_test_val_split(preprocessed_data):
     county = preprocessed_data[3]
     county_length = len(county)
-    training_df = county[0:int(county_length*0.6)]
-    val_df = county[int(county_length*0.4):int(county_length*0.6)]
-    test_df = county[int(county_length*0.6):]
+    training_df = county[0:int(county_length*0.6)] # training set for model parameter optimization
+    val_df = county[int(county_length*0.4):int(county_length*0.6)] #validation set used to find optimal model hyperparameters
+    test_df = county[int(county_length*0.6):] #test set used to determine model performance in general
     num_feature_days = county.shape[0]
     print("Number of Days:", str(num_feature_days))
     training_mean = training_df.mean()
