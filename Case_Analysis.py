@@ -92,13 +92,19 @@ def denormalize(df, training_mean, training_std ):
 def build_time_series_model(test_df, training_df, val_df):
     time_series_model = tf.keras.Sequential()
     time_series_model.add(layers.Embedding(input_dim=1000, output_dim=64), )
-    time_series_model.add(layers.LSTM(128))
+    time_series_model.add(layers.LSTM(1280))
+    time_series_model.add(layers.Dropout(0.2))
+    time_series_model.add(layers.LSTM(1280))
+    time_series_model.add(layers.Dropout(0.2))
     time_series_model.add(layers.Dense(1))
     time_series_model.summary()
+
     y_pred = time_series_model.predict(test_df)
+
     with tf.GradientTape() as tape:
         loss = tf.keras.backend.mean(tf.keras.backend.mean(
             tf.keras.losses.mse(y_true=test_df, y_pred=y_pred)))
+            
     '''Model compilation'''
     time_series_model.compile(loss=tf.losses.MeanSquaredError(),
                             optimizer=tf.optimizers.Adam(),
