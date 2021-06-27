@@ -63,9 +63,9 @@ def plot_county_cases(county, county_name):
 def train_test_val_split(preprocessed_data):
     county = preprocessed_data[3]
     county_length = len(county)
-    training_df = county[0:int(county_length*0.6)] # training set for model parameter optimization
-    val_df = county[int(county_length*0.4):int(county_length*0.6)] #validation set used to find optimal model hyperparameters
-    test_df = county[int(county_length*0.6):] #test set used to determine model performance in general
+    training_df = county[0:int(county_length*0.4)] # training set for model parameter optimization
+    val_df = county[int(county_length*0.4):int(county_length*0.8)] #validation set used to find optimal model hyperparameters
+    test_df = county[int(county_length*0.8):] #test set used to determine model performance in general
     num_feature_days = county.shape[0]
     print("Number of Days:", str(num_feature_days))
     training_mean = training_df.mean()
@@ -92,15 +92,16 @@ def denormalize(df, training_mean, training_std ):
 def build_time_series_model(test_df, training_df, val_df):
     time_series_model = tf.keras.Sequential()
     time_series_model.add(layers.Embedding(input_dim=1000, output_dim=64), )
-    time_series_model.add(layers.LSTM(1280))
+    time_series_model.add(layers.LSTM(128, return_sequences=True))
     time_series_model.add(layers.Dropout(0.2))
-    time_series_model.add(layers.LSTM(1280))
+    time_series_model.add(layers.LSTM(128, return_sequences=True))
     time_series_model.add(layers.Dropout(0.2))
     time_series_model.add(layers.Dense(1))
     time_series_model.summary()
 
     y_pred = time_series_model.predict(test_df)
 
+    '''Loss function'''
     with tf.GradientTape() as tape:
         loss = tf.keras.backend.mean(tf.keras.backend.mean(
             tf.keras.losses.mse(y_true=test_df, y_pred=y_pred)))
@@ -109,12 +110,15 @@ def build_time_series_model(test_df, training_df, val_df):
     time_series_model.compile(loss=tf.losses.MeanSquaredError(),
                             optimizer=tf.optimizers.Adam(),
                             metrics=[tf.metrics.MeanAbsoluteError()])
+
+    '''conversion of dataframes to numpy arrays and appropriate reshaping'''
     x = training_df.to_numpy()
     x = x.reshape(1, -1)
     y = val_df.to_numpy()
     y = y.reshape(1, -1)
     print(x.shape)
     print(y.shape)
+    print(test_df.shape)
     """Model training"""
     time_series_model.fit(x,
                         y,
@@ -135,7 +139,9 @@ def model_save_function(time_series_model):
 
 # y_pred.reshape(-1,1)
 def test_predictions(time_series_model, test_df, training_mean, training_std):
-    model_output = pd.DataFrame(time_series_model.predict(test_df))
+    tdf = test_df.to_numpy()
+    tdf = tdf.reshape(1,105)
+    model_output = pd.DataFrame(time_series_model.predict(tdf))
     denorm_predictions = pd.DataFrame(denormalize(model_output, training_mean, training_std))
     return(denorm_predictions)
 #y_pred2 = y_pred2.T
