@@ -60,11 +60,12 @@ def plot_county_cases(county, county_name):
 
 
 '''Training, Validation, and Test Split'''
+#Need to add test to check if training and validation sets have the same size due to ValueError
 def train_test_val_split(preprocessed_data):
     county = preprocessed_data[3]
     county_length = len(county)
     training_df = county[0:int(county_length*0.4)] # training set for model parameter optimization
-    val_df = county[int(county_length*0.4):int(county_length*0.8)] #validation set used to find optimal model hyperparameters
+    val_df = county[int(county_length*0.4):int(county_length*0.798)] #validation set used to find optimal model hyperparameters
     test_df = county[int(county_length*0.8):] #test set used to determine model performance in general
     num_feature_days = county.shape[0]
     print("Number of Days:", str(num_feature_days))
@@ -112,13 +113,17 @@ def build_time_series_model(test_df, training_df, val_df):
                             metrics=[tf.metrics.MeanAbsoluteError()])
 
     '''conversion of dataframes to numpy arrays and appropriate reshaping'''
-    x = training_df.to_numpy()
-    x = x.reshape(1, -1)
-    y = val_df.to_numpy()
-    y = y.reshape(1, -1)
-    print(x.shape)
-    print(y.shape)
-    print(test_df.shape)
+    def df_num_reshape(df):
+        num = df.to_numpy()
+        num.reshape(1,-1)
+        print(str(num.shape))# f"{df=}")
+        return(num)
+
+    x = df_num_reshape(training_df)
+    y = df_num_reshape(val_df)
+    df_num_reshape(test_df)
+
+
     """Model training"""
     time_series_model.fit(x,
                         y,
