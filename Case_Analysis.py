@@ -35,10 +35,10 @@ def preprocessing(case_df):
     st.text("Case database last updated: " + str(case_df.columns[-1]))
     state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
     region = case_df.loc[case_df['Province_State'] == state_name]
-    print(region)
+    #print(region)
     st.write(region)
     county_list = region['Admin2']
-    default_county = county_list.iloc[0]
+    #default_county = county_list.iloc[0]
     county_name = st.text_input("Enter county name ", )#"Hinds")# or default_county   
     county = region.loc[region['Admin2'] == county_name]
     columns = columns[5:11]
@@ -46,7 +46,11 @@ def preprocessing(case_df):
     date_index = range(len(county))
     county = county.transpose()
     lastdate = (str(region.columns[-1]))
-    return region_col, region_col_ax, region, county, county_name, lastdate
+    col_length = len(region.columns)
+    test_startdate = (str(region.columns[int(col_length*.803)]))
+    val_startdate = (str(region.columns[int(col_length*.4)]))
+    print(test_startdate)
+    return region_col, region_col_ax, region, county, val_startdate, test_startdate, county_name, lastdate
 
 def plot_county_cases(county, county_name):
     case_plot = county.plot(
@@ -100,6 +104,12 @@ def build_time_series_model(test_df, training_df, val_df):
     time_series_model.add(layers.Dense(1))
     time_series_model.summary()
 
+    def df_num_reshape(df):
+        num = df.to_numpy()
+        num = num.reshape(1,-1)
+        print(str(num.shape))# f"{df=}")
+        return(num)
+
     y_pred = time_series_model.predict(test_df)
 
     '''Loss function'''
@@ -113,22 +123,18 @@ def build_time_series_model(test_df, training_df, val_df):
                             metrics=[tf.metrics.MeanAbsoluteError()])
 
     '''conversion of dataframes to numpy arrays and appropriate reshaping'''
-    def df_num_reshape(df):
-        num = df.to_numpy()
-        num.reshape(1,-1)
-        print(str(num.shape))# f"{df=}")
-        return(num)
+
 
     x = df_num_reshape(training_df)
     y = df_num_reshape(val_df)
-    df_num_reshape(test_df)
+    #df_num_reshape(test_df)
 
 
     """Model training"""
     time_series_model.fit(x,
                         y,
-                        batch_size=32,
-                        epochs=1)
+                        batch_size=5,
+                        epochs=8)
     return time_series_model
 
 def model_save_function(time_series_model):
@@ -144,15 +150,21 @@ def model_save_function(time_series_model):
 
 # y_pred.reshape(-1,1)
 def test_predictions(time_series_model, test_df, training_mean, training_std):
-    tdf = test_df.to_numpy()
-    tdf = tdf.reshape(1,105)
-    model_output = pd.DataFrame(time_series_model.predict(tdf))
+   # tdf = test_df.to_numpy()
+    #tf = tdf.reshape(-1,1)
+    #print(tf, tf.shape)
+    model_output = time_series_model.predict(test_df)
+    model_output = pd.DataFrame(model_output.reshape(test_df.shape))
+    print(test_df.shape)
+    #df_temp = pd.DataFrame(pd.np.empty((test_df.shape)))
     denorm_predictions = pd.DataFrame(denormalize(model_output, training_mean, training_std))
+    print("PREDICTIONS:")
+    print(denorm_predictions)
     return(denorm_predictions)
 #y_pred2 = y_pred2.T
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
-def plot_case_predictions(predictions, county_name, saved_model, lastdate):
+def plot_case_predictions(predictions, county_name, saved_model, startdate, lastdate):
     import matplotlib.pyplot as plt
     from matplotlib import dates as mdates
     import streamlit as st
@@ -161,12 +173,13 @@ def plot_case_predictions(predictions, county_name, saved_model, lastdate):
     sns.set_theme()
     #dates.DayLocator(bymonthday = range(1,182), interval = len(predictions))
     print("THIS IS MY LASTDATE VARIABLE: ", lastdate,  type(lastdate))
-    datearray = pd.date_range(start = lastdate, end = "03-21-21", freq = 'D').strftime("%m-%d-%Y")
+    datearray = pd.date_range(start = startdate, end = lastdate, freq = 'D').strftime("%m-%d-%Y")
     #tickvalues = list(range(predictions))
     print("THIS IS THE DATEARRAY ",datearray)
 
    # plt.axis(xmin = 0, xmax = 10)
     predictions = predictions.T
+    print(predictions.shape)
     predictions.columns=datearray.tolist()
     predictions = predictions.T
     #predictions.reset_index()
@@ -176,7 +189,8 @@ def plot_case_predictions(predictions, county_name, saved_model, lastdate):
     plt.title("Projected COVID-19 cases in " + county_name + " county")
     plt.xlabel("Date")
     plt.ylabel("Projected COVID-19 cases in " + county_name + " county")
-    plt.xticks(np.arange(0, 150, 10.0))
+    plt.xticks(np.arange(0, 110, 5.0))
+    #plt.ticklabel_format(useOffset=False, style='plain')
     #plt.ylim([0, int(predictions.max())])
     plt.legend([county_name])
     #plt.locator_params(axis = 'x', nbins=len(predictions)/10)
