@@ -14,7 +14,7 @@ The neural network architecture and some of the feature engineering code are ref
 
 COVID-19 case data are sourced from: https://coronavirus-resources.esri.com/datasets/628578697fb24d8ea4c32fa0c5ae1843_0/data?where=(Confirmed%20%3E%200)
 
-The following gif depicts my project in-action at a glance:
+The following gif depicts the project in-action at a glance:
 
 ![alt-text](C19-predict_demo3.gif)
 
