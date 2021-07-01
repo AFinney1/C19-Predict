@@ -33,13 +33,19 @@ def preprocessing(case_df):
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
     st.text("Case database last updated: " + str(case_df.columns[-1]))
-    state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
+    try:
+        state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
+    except:
+        st.error("Please enter the proper name of the state without whitespace(e.g. 'Texas', not 'texas ')")
     region = case_df.loc[case_df['Province_State'] == state_name]
     #print(region)
     st.write(region)
     county_list = region['Admin2']
     #default_county = county_list.iloc[0]
-    county_name = st.text_input("Enter county name ", )#"Hinds")# or default_county   
+    try:
+        county_name = st.text_input("Enter county name ", )#"Hinds")# or default_county
+    except:
+        st.error("Please enter the proper name of the county without whitespace(e.g. 'Austin', not 'austin '")   
     county = region.loc[region['Admin2'] == county_name]
     columns = columns[5:11]
     county.drop(columns, inplace=True, axis=1)
@@ -47,10 +53,11 @@ def preprocessing(case_df):
     county = county.transpose()
     lastdate = (str(region.columns[-1]))
     col_length = len(region.columns)
+    initial_startdate = (str(region.columns[6]))
     test_startdate = (str(region.columns[int(col_length*.803)]))
     val_startdate = (str(region.columns[int(col_length*.4)]))
     print(test_startdate)
-    return region_col, region_col_ax, region, county, val_startdate, test_startdate, county_name, lastdate
+    return region_col, region_col_ax, region, county, initial_startdate, val_startdate, test_startdate, county_name, lastdate
 
 def plot_county_cases(county, county_name):
     case_plot = county.plot(
@@ -69,7 +76,10 @@ def train_test_val_split(preprocessed_data):
     county = preprocessed_data[3]
     county_length = len(county)
     training_df = county[0:int(county_length*0.4)] # training set for model parameter optimization
-    val_df = county[int(county_length*0.4):int(county_length*0.798)] #validation set used to find optimal model hyperparameters
+    try:
+        val_df = county[int(county_length*0.4):int(county_length*0.8)] #validation set used to find optimal model hyperparameters
+    except:
+        val_df = county[int(county_length*0.4):int(county_length*0.798)] #second splice needed in case previous split doesn't work based on odd vs even days.
     test_df = county[int(county_length*0.8):] #test set used to determine model performance in general
     num_feature_days = county.shape[0]
     print("Number of Days:", str(num_feature_days))
@@ -164,7 +174,7 @@ def test_predictions(time_series_model, test_df, training_mean, training_std):
 #y_pred2 = y_pred2.T
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
-def plot_case_predictions(predictions, county_name, saved_model, startdate, lastdate):
+def plot_cases(cases, county_name, startdate, lastdate, title = "Projected COVID-19 cases", history = True):
     import matplotlib.pyplot as plt
     from matplotlib import dates as mdates
     import streamlit as st
@@ -172,24 +182,33 @@ def plot_case_predictions(predictions, county_name, saved_model, startdate, last
     import seaborn as sns
     sns.set_theme()
     #dates.DayLocator(bymonthday = range(1,182), interval = len(predictions))
-    print("THIS IS MY LASTDATE VARIABLE: ", lastdate,  type(lastdate))
+    print("THESE ARE MY DATE VARIABLES: ", startdate, type(startdate), lastdate,  type(lastdate))
     datearray = pd.date_range(start = startdate, end = lastdate, freq = 'D').strftime("%m-%d-%Y")
     #tickvalues = list(range(predictions))
     print("THIS IS THE DATEARRAY ",datearray)
 
    # plt.axis(xmin = 0, xmax = 10)
-    predictions = predictions.T
-    print(predictions.shape)
-    predictions.columns=datearray.tolist()
-    predictions = predictions.T
+    cases = cases.T
+    print(cases.shape)
+    casedate_difference = (cases.shape)[1] - len(datearray.tolist()) 
+    cases.drop(labels = cases.columns[:casedate_difference], inplace = True, axis = 1)
+    cases.columns = datearray.tolist()
+    cases = cases.T
     #predictions.reset_index()
   #  predictions.set_index(datearray)
 
-    plt.plot(predictions)
-    plt.title("Projected COVID-19 cases in " + county_name + " county")
+    
+    if history == False:
+        plt.title("Predicted COVID-19 cases in " + county_name + " county")
+        plt.plot(cases, color = 'r', linestyle = '--')
+    elif history == True:
+        plt.title("Past Covid-19 cases in " + county_name + " county")
+        plt.plot(cases, color = 'blue')
+        #cases = denormalize(cases)
     plt.xlabel("Date")
-    plt.ylabel("Projected COVID-19 cases in " + county_name + " county")
-    plt.xticks(np.arange(0, 110, 5.0))
+    plt.ylabel("COVID-19 cases")
+    plt.xticks(np.arange(0, len(datearray), 15.0))
+    
     #plt.ticklabel_format(useOffset=False, style='plain')
     #plt.ylim([0, int(predictions.max())])
     plt.legend([county_name])
@@ -206,7 +225,7 @@ def plot_case_predictions(predictions, county_name, saved_model, startdate, last
     st.set_option("deprecation.showPyplotGlobalUse", False)
     st.pyplot()
   
-    
+
    
 
 def main():
@@ -222,7 +241,7 @@ def main():
     saved_model = model_save_function(model)
     model_test= test_predictions(model, test_df, training_mean, training_std)
     print(model_test)
-    plot_case_predictions(model_test, county_name, saved_model, lastdate)
+    plot_cases(model_test, county_name, saved_model, lastdate)
  
 
 if __name__ == "__main__":

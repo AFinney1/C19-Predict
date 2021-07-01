@@ -23,10 +23,7 @@ This project is still a work in progress.
 Future changes to the project will include:
 
 - higher quality predictions and more sophisticated modeling
-- more informative and interactive maps
 - statistical comparisons of this project to mainstream case projections
-- automated dataset updates to compare past predictions with recent data 
 - improved user interface
 - add cloud hosting for training new models from devices without GPUs
-- improved exception handling (some counties not working, for example)
-
+- improved exception handling
