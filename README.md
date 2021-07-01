@@ -16,7 +16,7 @@ COVID-19 case data are sourced from: https://coronavirus-resources.esri.com/data
 
 The following gif depicts my project in-action at a glance:
 
-![alt-text](C19-predict_demo.gif)
+![alt-text](C19-predict_demo3.gif)
 
 This project is still a work in progress. 
 
