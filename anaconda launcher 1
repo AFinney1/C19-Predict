@@ -1,4 +1,0 @@
-export CONDA_PYTHON_EXE=/home/austin/anaconda3/bin/python
-export PATH=/home/austin/anaconda3/bin:$PATH
-python /home/austin/anaconda3/bin/anaconda-navigator
-
