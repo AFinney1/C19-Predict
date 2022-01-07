@@ -194,8 +194,8 @@ class Optimization:
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
             for x_batch, y_batch in train_loader:
-                x_batch = x_batch.view([batch_size, -1, n_features]).to("cuda")
-                y_batch = y_batch.to("cuda")
+                x_batch = x_batch.view([batch_size, -1, n_features]).to("cpu")
+                y_batch = y_batch.to("cpu")
                 loss = self.train_step(x_batch, y_batch)
                 batch_losses.append(loss)
             training_loss = np.mean(batch_losses)
@@ -204,8 +204,8 @@ class Optimization:
             with torch.no_grad():
                 batch_val_losses = []
                 for x_val, y_val in val_loader:
-                    x_val = x_val.view([batch_size, -1, n_features]).to("cuda")
-                    y_val = y_val.to("cuda")
+                    x_val = x_val.view([batch_size, -1, n_features]).to("cpu")
+                    y_val = y_val.to("cpu")
                     self.model.eval()
                     yhat = self.model(x_val)
                     val_loss = self.loss_fn(y_val, yhat).item()
@@ -225,12 +225,12 @@ class Optimization:
             predictions = []
             values = []
             for x_test, y_test in test_loader:
-                x_test = x_test.view([batch_size, -1, n_features]).to('cuda')
-                y_test = y_test.to('cuda')
+                x_test = x_test.view([batch_size, -1, n_features]).to('cpu')
+                y_test = y_test.to('cpu')
                 self.model.eval()
                 yhat = self.model(x_test)
-                predictions.append(yhat.to('cuda').detach().numpy())
-                values.append(y_test.to('cuda').detach().numpy())
+                predictions.append(yhat.to('cpu').detach().numpy())
+                values.append(y_test.to('cpu').detach().numpy())
 
         return predictions, values 
 
