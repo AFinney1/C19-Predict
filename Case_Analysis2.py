@@ -18,12 +18,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, Dataset
 from sklearn.preprocessing import MinMaxScaler
 from pandas.io.stata import StataReader
 from Case_pipeline import get_cases
 
-# Data importation test
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"{device} " " is available")
 
 
 def preprocessing(case_df):
@@ -105,11 +107,11 @@ def denormalize(df, training_mean, training_std ):
 '''Peek at the dataset's distribution of features'''
 #case_df.drop(columns[5:10], inplace=True, axis=1)
 #print(case_df)
-def torch_data_loader(x_train, x_val, x_test, y_train, y_val, y_test):
+def torch_data_loader(x_train, x_val, x_test):
 
-    train_dataset = TensorDataset(x_train, y_train)
-    val_dataset = TensorDataset(x_val, y_val)
-    test_dataset = TensorDataset(x_test, y_test)
+    train_dataset = torch.Tensor(x_train.values)
+    val_dataset = torch.Tensor(x_val.values)
+    test_dataset = torch.Tensor(x_test.values)
     batch_size = 100
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
@@ -135,10 +137,10 @@ class LSTMModel(nn.Module):
 
     def forward(self, x):
         # Initializing hidden state for first input with zeros
-        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+        h0 = torch.zeros(self.layer_dim, len(x), self.hidden_dim).requires_grad_()
 
         # Initializing cell state for first input with zeros
-        c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
+        c0 = torch.zeros(self.layer_dim, len(x), self.hidden_dim).requires_grad_()
 
         # We need to detach as we are doing truncated backpropagation through time (BPTT)
         # If we don't, we'll backprop all the way to the start even after going through another batch
@@ -154,6 +156,10 @@ class LSTMModel(nn.Module):
 
         return out
 
+    
+
+
+
 def get_model(model, model_params):
     models = {
         "lstm": LSTMModel
@@ -168,7 +174,7 @@ class Optimization:
         self.train_losses = []
         self.val_losses = []
     
-    def train_step(self, x, y):
+    def train_step(self, x):
         # Sets model to train mode
         self.model.train()
 
@@ -176,6 +182,7 @@ class Optimization:
         yhat = self.model(x)
 
         # Computes loss
+        y = x.copy()
         loss = self.loss_fn(y, yhat)
 
         # Computes gradients
@@ -193,10 +200,12 @@ class Optimization:
 
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
-            for x_batch, y_batch in train_loader:
-                x_batch = x_batch.view([batch_size, -1, n_features]).to("cpu")
-                y_batch = y_batch.to("cpu")
-                loss = self.train_step(x_batch, y_batch)
+            print(train_loader)
+            for x_batch in train_loader:
+                print(type(x_batch))# y_batch)
+                #x_batch = x_batch.view([batch_size, -1, n_features]).to(device)
+                #y_batch = y_batch.to(device)
+                loss = self.train_step(x_batch)# y_batch)
                 batch_losses.append(loss)
             training_loss = np.mean(batch_losses)
             self.train_losses.append(training_loss)
@@ -204,8 +213,8 @@ class Optimization:
             with torch.no_grad():
                 batch_val_losses = []
                 for x_val, y_val in val_loader:
-                    x_val = x_val.view([batch_size, -1, n_features]).to("cpu")
-                    y_val = y_val.to("cpu")
+                    x_val = x_val.view([batch_size, -1, n_features]).to(device)
+                    y_val = y_val.to(device)
                     self.model.eval()
                     yhat = self.model(x_val)
                     val_loss = self.loss_fn(y_val, yhat).item()
@@ -225,44 +234,14 @@ class Optimization:
             predictions = []
             values = []
             for x_test, y_test in test_loader:
-                x_test = x_test.view([batch_size, -1, n_features]).to('cpu')
-                y_test = y_test.to('cpu')
+                x_test = x_test.view([batch_size, -1, n_features]).to(device)
+                y_test = y_test.to(device)
                 self.model.eval()
                 yhat = self.model(x_test)
-                predictions.append(yhat.to('cpu').detach().numpy())
-                values.append(y_test.to('cpu').detach().numpy())
+                predictions.append(yhat.to(device).detach().numpy())
+                values.append(y_test.to(device).detach().numpy())
 
         return predictions, values 
-
-
-
-    def define_optimize_predict(x_train, train_loader, val_loader, test_loader_one):
-        input_dim = len(x_train.columns)
-        output_dim = 1
-        hidden_dim = 64
-        layer_dim = 3
-        batch_size = 64
-        dropout = 0.2
-        n_epochs = 100
-        learning_rate = 1e-3
-        weight_decay = 1e-6
-
-        model_params = {'input_dim': input_dim,
-                        'hidden_dim' : hidden_dim,
-                        'layer_dim' : layer_dim,
-                        'output_dim' : output_dim,
-                        'dropout_prob' : dropout}
-
-        model = get_model('lstm', model_params)
-
-        loss_fn = nn.MSELoss(reduction="mean")
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-
-        opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
-        opt.train(train_loader, val_loader, batch_size=batch_size, n_epochs=n_epochs, n_features=input_dim)
-        opt.plot_losses()
-
-        predictions, values = opt.evaluate(test_loader_one, batch_size=1, n_features=input_dim)
 
 
     """Model Prediction and Plotting"""
@@ -341,8 +320,27 @@ def main():
     training_df = normalize(training_df, training_mean, training_std)
     val_df = normalize(val_df, training_mean, training_std)
     test_df = normalize(test_df, training_mean, training_std)
+    print(training_df.shape, val_df.shape, test_df.shape)
+    input_dim = len(training_df.columns)
+    output_dim = 1
+    hidden_dim = 64
+    layer_dim = 3
+    batch_size = 64
+    dropout = 0.2
+    n_epochs = 100
+    learning_rate = 1e-3
+    weight_decay = 1e-6
+
+    train_loader, val_loader, test_loader, test_loader_one = torch_data_loader(training_df, val_df, test_df)
+
+
     model = LSTMModel(input_dim = training_df.shape[0], hidden_dim=100, layer_dim = 3, output_dim = 1, dropout_prob=0.2)
-    model.train(training_df, val_df, batch_size=64, n_epochs=100, n_features=training_df.shape[0])
+    loss_fn = nn.MSELoss(reduction="mean")
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
+    opt.train(train_loader, val_loader, batch_size=batch_size, n_epochs=n_epochs, n_features=input_dim)
+    opt.plot_losses()
+    
     
 
     #print(model_test)
