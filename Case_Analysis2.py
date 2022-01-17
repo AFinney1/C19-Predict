@@ -155,7 +155,7 @@ class LSTMModel(nn.Module):
         # We need to detach as we are doing truncated backpropagation through time (BPTT)
         # If we don't, we'll backprop all the way to the start even after going through another batch
         # Forward propagation by passing in the input, hidden state, and cell state into the model
-        print("EVIL X")
+        print(" X")
         print(type(x))
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
 
