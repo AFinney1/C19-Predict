@@ -109,10 +109,18 @@ def denormalize(df, training_mean, training_std ):
 #print(case_df)
 def torch_data_loader(x_train, x_val, x_test):
 
-    train_dataset = torch.Tensor(x_train.values)
-    val_dataset = torch.Tensor(x_val.values)
-    test_dataset = torch.Tensor(x_test.values)
+    train_features = torch.Tensor(x_train.values)
+    val_features = torch.Tensor(x_val.values)
+    test_features = torch.Tensor(x_test.values)
+    train_targets = torch.Tensor(x_train.values)
+    val_targets = torch.Tensor(x_val.values)
+    test_targets = torch.Tensor(x_test.values)
     batch_size = 100
+
+    train_dataset = TensorDataset(train_features, train_targets)
+    val_dataset = TensorDataset(val_features, val_targets)
+    test_dataset = TensorDataset(test_features, test_targets)
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
@@ -137,6 +145,8 @@ class LSTMModel(nn.Module):
 
     def forward(self, x):
         # Initializing hidden state for first input with zeros
+
+        x = torch.FloatTensor(x)
         h0 = torch.zeros(self.layer_dim, len(x), self.hidden_dim).requires_grad_()
 
         # Initializing cell state for first input with zeros
@@ -145,6 +155,8 @@ class LSTMModel(nn.Module):
         # We need to detach as we are doing truncated backpropagation through time (BPTT)
         # If we don't, we'll backprop all the way to the start even after going through another batch
         # Forward propagation by passing in the input, hidden state, and cell state into the model
+        print("EVIL X")
+        print(type(x))
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
 
         # Reshaping the outputs in the shape of (batch_size, seq_length, hidden_size)
@@ -200,11 +212,13 @@ class Optimization:
 
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
-            print(train_loader)
+            print(train_loader) 
             for x_batch in train_loader:
                 print(type(x_batch))# y_batch)
+                #x_batch = torch.tensor(x_batch)
                 #x_batch = x_batch.view([batch_size, -1, n_features]).to(device)
                 #y_batch = y_batch.to(device)
+            
                 loss = self.train_step(x_batch)# y_batch)
                 batch_losses.append(loss)
             training_loss = np.mean(batch_losses)
