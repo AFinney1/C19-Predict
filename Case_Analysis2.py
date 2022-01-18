@@ -24,7 +24,7 @@ from pandas.io.stata import StataReader
 from Case_pipeline import get_cases
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu" #if torch.cuda.is_available() else "cpu"
 print(f"{device} " " is available")
 
 
@@ -112,16 +112,19 @@ def torch_data_loader(x_train, x_val, x_test):
     train_features = torch.Tensor(x_train.values)
     val_features = torch.Tensor(x_val.values)
     test_features = torch.Tensor(x_test.values)
+    print(train_features.shape)
     train_targets = torch.Tensor(x_train.values)
     val_targets = torch.Tensor(x_val.values)
     test_targets = torch.Tensor(x_test.values)
-    batch_size = 100
+    batch_size = 1
 
     train_dataset = TensorDataset(train_features, train_targets)
     val_dataset = TensorDataset(val_features, val_targets)
     test_dataset = TensorDataset(test_features, test_targets)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    print(train_loader)
+    print(train_dataset)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     test_loader_one = DataLoader(test_dataset, batch_size=1, shuffle=True)
@@ -146,7 +149,7 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         # Initializing hidden state for first input with zeros
 
-        x = torch.FloatTensor(x)
+        #x = torch.FloatTensor(x)
         h0 = torch.zeros(self.layer_dim, len(x), self.hidden_dim).requires_grad_()
 
         # Initializing cell state for first input with zeros
@@ -191,10 +194,14 @@ class Optimization:
         self.model.train()
 
         # Makes predictions
-        yhat = self.model(x)
+        #print(x)
+        x = torch.stack(x).to(device)
+        print(type(x))
+        print(x.shape)
+        yhat = self.model(x).to(device)
 
         # Computes loss
-        y = x.copy()
+        y = x
         loss = self.loss_fn(y, yhat)
 
         # Computes gradients
@@ -208,18 +215,19 @@ class Optimization:
         return loss.item()
 
     def train(self, train_loader, val_loader, batch_size=64, n_epochs=50, n_features=1):
-        model_path = f'models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        model_path = f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
 
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
             print(train_loader) 
-            for x_batch in train_loader:
+            for x_batch, y_batch in train_loader:
+                x_batch = torch.tensor(x_batch[0])
                 print(type(x_batch))# y_batch)
                 #x_batch = torch.tensor(x_batch)
-                #x_batch = x_batch.view([batch_size, -1, n_features]).to(device)
-                #y_batch = y_batch.to(device)
-            
-                loss = self.train_step(x_batch)# y_batch)
+                x_batch = x_batch.view([batch_size, n_features]).to(device)
+                y_batch = y_batch.to(device)
+               #print(x_batch, y_batch)
+                loss = self.train_step((x_batch, y_batch))
                 batch_losses.append(loss)
             training_loss = np.mean(batch_losses)
             self.train_losses.append(training_loss)
@@ -336,10 +344,10 @@ def main():
     test_df = normalize(test_df, training_mean, training_std)
     print(training_df.shape, val_df.shape, test_df.shape)
     input_dim = len(training_df.columns)
-    output_dim = 1
+    output_dim = len(training_df.columns)
     hidden_dim = 64
     layer_dim = 3
-    batch_size = 64
+    batch_size = 1
     dropout = 0.2
     n_epochs = 100
     learning_rate = 1e-3
@@ -348,7 +356,7 @@ def main():
     train_loader, val_loader, test_loader, test_loader_one = torch_data_loader(training_df, val_df, test_df)
 
 
-    model = LSTMModel(input_dim = training_df.shape[0], hidden_dim=100, layer_dim = 3, output_dim = 1, dropout_prob=0.2)
+    model = LSTMModel(input_dim = input_dim, hidden_dim=100, layer_dim = 3, output_dim = output_dim, dropout_prob=0.2)
     loss_fn = nn.MSELoss(reduction="mean")
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
