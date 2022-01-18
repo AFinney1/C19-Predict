@@ -14,6 +14,7 @@ import pandas as pd
 import seaborn as sns
 import sklearn
 import streamlit as st
+import os
 import torch 
 import torch.nn as nn
 import torch.optim as optim
@@ -188,6 +189,8 @@ class Optimization:
         self.optimizer = optimizer
         self.train_losses = []
         self.val_losses = []
+        self.model_p = f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+
     
     def train_step(self, x):
         # Sets model to train mode
@@ -215,7 +218,7 @@ class Optimization:
         return loss.item()
 
     def train(self, train_loader, val_loader, batch_size=64, n_epochs=50, n_features=1):
-        model_path = f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        model_path = self.model_p
 
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
@@ -249,8 +252,7 @@ class Optimization:
                     f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}\t Validation loss: {validation_loss:.4f}"
                 )
 
-        torch.save(self.model.state_dict(), model_path)
-
+        
     def evaluate(self, test_loader, batch_size=1, n_features=1):
         with torch.no_grad():
             predictions = []
@@ -265,6 +267,14 @@ class Optimization:
 
         return predictions, values 
 
+    def train_if_empty(self, model_dir, train_loader, val_loader, batch_size = 1,  n_epochs = 10):
+        "if directory is empty, train model, else load one"
+        print(model_dir)
+        if not os.listdir(model_dir):
+            self.train(train_loader, val_loader, n_epochs=n_epochs)
+            self.save_model("")
+        else:
+            Optimization.load_model(model_dir)
 
     """Model Prediction and Plotting"""
     def plot_losses(self):
@@ -274,6 +284,16 @@ class Optimization:
         plt.title("Losses")
         plt.show()
         plt.close()
+
+    """ Save Model """
+    def save_model(self, model_path):
+        torch.save(model_path)
+
+    """ Load Model """
+    def load_model(model_path):
+        print(os.listdir())
+        model = torch.load(os.listdir()[0])
+        return model
 # y_pred.reshape(-1,1)
 
 
@@ -331,7 +351,7 @@ def plot_cases(cases, county_name, startdate, lastdate, title = "Projected COVID
     st.pyplot()
   
 
-   
+
 
 def main():
     case_df = get_cases()
@@ -360,8 +380,8 @@ def main():
     loss_fn = nn.MSELoss(reduction="mean")
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
-    opt.train(train_loader, val_loader, batch_size=batch_size, n_epochs=n_epochs, n_features=input_dim)
-    opt.plot_losses()
+    opt.train_if_empty(model_dir = "torch_models" , train_loader = train_loader, val_loader = val_loader, n_epochs = n_epochs)
+    
     
     
 

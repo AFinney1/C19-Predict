@@ -182,7 +182,7 @@ def plot_cases(cases, county_name, startdate, lastdate, title = "Projected COVID
     import seaborn as sns
     sns.set_theme()
     #dates.DayLocator(bymonthday = range(1,182), interval = len(predictions))
-    print("THESE ARE MY DATE VARIABLES: ", startdate, type(startdate), lastdate,  type(lastdate))
+    #print("THESE ARE MY DATE VARIABLES: ", startdate, type(startdate), lastdate,  type(lastdate))
     datearray = pd.date_range(start = startdate, end = lastdate, freq = 'D').strftime("%m-%d-%Y")
     #tickvalues = list(range(predictions))
     print("THIS IS THE DATEARRAY ",datearray)
