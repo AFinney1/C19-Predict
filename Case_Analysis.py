@@ -185,7 +185,7 @@ def plot_cases(cases, county_name, startdate, lastdate, title = "Projected COVID
     #print("THESE ARE MY DATE VARIABLES: ", startdate, type(startdate), lastdate,  type(lastdate))
     datearray = pd.date_range(start = startdate, end = lastdate, freq = 'D').strftime("%m-%d-%Y")
     #tickvalues = list(range(predictions))
-    print("THIS IS THE DATEARRAY ",datearray)
+    #print("THIS IS THE DATEARRAY ",datearray)
 
    # plt.axis(xmin = 0, xmax = 10)
     cases = cases.T

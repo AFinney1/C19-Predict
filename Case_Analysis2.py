@@ -287,8 +287,8 @@ class Optimization:
         plt.plot(self.val_losses, label="Validation loss")
         plt.legend()
         plt.title("Losses")
-        plt.show()
-        plt.close()
+        fig = plt
+        st.pyplot(fig)
 
     """ Save Model """
     def save_model(self):
@@ -298,65 +298,13 @@ class Optimization:
     def load_model(model_path):
         print("Torch paths")
         print(os.listdir("torch_models"))
-
         model = torch.load('torch_models/'+os.listdir("torch_models")[0])
         return model
 # y_pred.reshape(-1,1)
 
 
 #y_pred2 = pd.DataFrame(time_series_model.predict(test_df))
-def plot_cases(cases, county_name, startdate, lastdate, title = "Projected COVID-19 cases", history = True):
-    from datetime import datetime
 
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import streamlit as st
-    from matplotlib import dates as mdates
-    sns.set_theme()
-    #dates.DayLocator(bymonthday = range(1,182), interval = len(predictions))
-    print("THESE ARE MY DATE VARIABLES: ", startdate, type(startdate), lastdate,  type(lastdate))
-    datearray = pd.date_range(start = startdate, end = lastdate, freq = 'D').strftime("%m-%d-%Y")
-    #tickvalues = list(range(predictions))
-    print("THIS IS THE DATEARRAY ",datearray)
-
-   # plt.axis(xmin = 0, xmax = 10)
-    cases = cases.T
-    print(cases.shape)
-    casedate_difference = (cases.shape)[1] - len(datearray.tolist()) 
-    cases.drop(labels = cases.columns[:casedate_difference], inplace = True, axis = 1)
-    cases.columns = datearray.tolist()
-    cases = cases.T
-    #predictions.reset_index()
-  #  predictions.set_index(datearray)
-
-    
-    if history == False:
-        plt.title("Predicted COVID-19 cases in " + county_name + " county")
-        plt.plot(cases, color = 'r', linestyle = '--')
-    elif history == True:
-        plt.title("Past Covid-19 cases in " + county_name + " county")
-        plt.plot(cases, color = 'blue')
-        #cases = denormalize(cases)
-    plt.xlabel("Date")
-    plt.ylabel("COVID-19 cases")
-    plt.xticks(np.arange(0, len(datearray), 15.0))
-    
-    #plt.ticklabel_format(useOffset=False, style='plain')
-    #plt.ylim([0, int(predictions.max())])
-    plt.legend([county_name])
-    #plt.locator_params(axis = 'x', nbins=len(predictions)/10)
-   # ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-    #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m-%d-%Y'))
-    plt.gcf().autofmt_xdate()
-    #plt.show()
-    #plt.autofmt_xdate()
-   # plt.savefig(saved_model[1])
-    #plt.savefig("Predicted Cases")
-    #fig = plt.figure()
-
-    st.set_option("deprecation.showPyplotGlobalUse", False)
-    st.pyplot()
-  
 
 
 
@@ -376,7 +324,7 @@ def main():
     layer_dim = 3
     batch_size = 1
     dropout = 0.2
-    n_epochs = 100
+    n_epochs = 10
     learning_rate = 1e-3
     weight_decay = 1e-6
 
@@ -388,7 +336,8 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
     opt.train_if_empty(model_dir = "torch_models" , train_loader = train_loader, val_loader = val_loader, n_epochs = n_epochs)
-    
+    predictions, values = opt.evaluate(test_loader)
+    opt.plot_losses()
     
     
 
