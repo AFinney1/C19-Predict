@@ -189,7 +189,7 @@ class Optimization:
         self.optimizer = optimizer
         self.train_losses = []
         self.val_losses = []
-        self.model_p = f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        self.model_p = "torch_models/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))##f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
 
     
     def train_step(self, x):
@@ -251,7 +251,7 @@ class Optimization:
                 print(
                     f"[{epoch}/{n_epochs}] Training loss: {training_loss:.4f}\t Validation loss: {validation_loss:.4f}"
                 )
-
+        torch.save(self.model.state_dict(), model_path)
         
     def evaluate(self, test_loader, batch_size=1, n_features=1):
         with torch.no_grad():
@@ -271,10 +271,15 @@ class Optimization:
         "if directory is empty, train model, else load one"
         print(model_dir)
         if not os.listdir(model_dir):
-            self.train(train_loader, val_loader, n_epochs=n_epochs)
-            self.save_model("")
+            self.train(train_loader, val_loader, batch_size = batch_size, n_epochs=n_epochs)
+           # print(self.model_p)
+           # self.save_model(self.model.state_dict())#, "torch_models/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         else:
-            Optimization.load_model(model_dir)
+            print(os.listdir(model_dir))
+            print("DOOT")
+            print(os.scandir())
+            #model = torch.load()
+            self.load_model()
 
     """Model Prediction and Plotting"""
     def plot_losses(self):
@@ -286,13 +291,15 @@ class Optimization:
         plt.close()
 
     """ Save Model """
-    def save_model(self, model_path):
-        torch.save(model_path)
+    def save_model(self):
+        torch.save("torch_models"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
 
     """ Load Model """
     def load_model(model_path):
-        print(os.listdir())
-        model = torch.load(os.listdir()[0])
+        print("Torch paths")
+        print(os.listdir("torch_models"))
+
+        model = torch.load('torch_models/'+os.listdir("torch_models")[0])
         return model
 # y_pred.reshape(-1,1)
 
