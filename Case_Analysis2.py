@@ -23,6 +23,7 @@ from torch.utils.data import TensorDataset, DataLoader, Dataset
 from sklearn.preprocessing import MinMaxScaler
 from pandas.io.stata import StataReader
 from Case_pipeline import get_cases
+from PIL import Image
 
 
 device = "cpu" #if torch.cuda.is_available() else "cpu"
@@ -62,7 +63,7 @@ def preprocessing(case_df):
     test_startdate = (str(region.columns[int(col_length*.803)]))
     val_startdate = (str(region.columns[int(col_length*.4)]))
     print(test_startdate)
-    return region_col, region_col_ax, region, county, initial_startdate, val_startdate, test_startdate, county_name, lastdate
+    return region_col, region_col_ax, region, county, initial_startdate, val_startdate, test_startdate, county_name, state_name, lastdate
 
 def plot_county_cases(county, county_name):
     case_plot = county.plot(
@@ -159,8 +160,7 @@ class LSTMModel(nn.Module):
         # We need to detach as we are doing truncated backpropagation through time (BPTT)
         # If we don't, we'll backprop all the way to the start even after going through another batch
         # Forward propagation by passing in the input, hidden state, and cell state into the model
-        print(" X")
-        print(type(x))
+  
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
 
         # Reshaping the outputs in the shape of (batch_size, seq_length, hidden_size)
@@ -183,13 +183,13 @@ def get_model(model, model_params):
     return models.get(model.lower())(**model_params)
     
 class Optimization:
-    def __init__(self, model, loss_fn, optimizer):
+    def __init__(self, model, loss_fn, optimizer, state_county):
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.train_losses = []
         self.val_losses = []
-        self.model_p = "torch_models/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))##f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        self.model_p = "torch_models/"+state_county+"/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))##f'torch_models/{self.model}_{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
 
     
     def train_step(self, x):
@@ -199,8 +199,6 @@ class Optimization:
         # Makes predictions
         #print(x)
         x = torch.stack(x).to(device)
-        print(type(x))
-        print(x.shape)
         yhat = self.model(x).to(device)
 
         # Computes loss
@@ -222,10 +220,11 @@ class Optimization:
 
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
-            print(train_loader) 
+            #print(train_loader) 
+            print("Training...")
             for x_batch, y_batch in train_loader:
                 x_batch = torch.tensor(x_batch[0])
-                print(type(x_batch))# y_batch)
+                #print(type(x_batch))# y_batch)
                 #x_batch = torch.tensor(x_batch)
                 x_batch = x_batch.view([batch_size, n_features]).to(device)
                 y_batch = y_batch.to(device)
@@ -274,32 +273,31 @@ class Optimization:
             self.train(train_loader, val_loader, batch_size = batch_size, n_epochs=n_epochs)
            # print(self.model_p)
            # self.save_model(self.model.state_dict())#, "torch_models/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            plt.plot(self.train_losses, label="Training loss")
+            plt.plot(self.val_losses, label="Validation loss")
+            print(self.train_losses, self.val_losses)
+            plt.legend()
+            plt.title("Losses")
+            plt.savefig(model_dir+"/Losses.png")
+            fig = plt
+            st.pyplot(fig)
         else:
+            
+            #print("DOOT")
             print(os.listdir(model_dir))
-            print("DOOT")
-            print(os.scandir())
             #model = torch.load()
-            self.load_model()
+            self.model.load_state_dict(torch.load(model_dir+"/"+os.listdir(model_dir)[-1]))
+            fig = Image.open(model_dir+"/"+"Losses.png")
+            st.image(fig)
+   
 
-    """Model Prediction and Plotting"""
-    def plot_losses(self):
-        plt.plot(self.train_losses, label="Training loss")
-        plt.plot(self.val_losses, label="Validation loss")
-        plt.legend()
-        plt.title("Losses")
-        fig = plt
-        st.pyplot(fig)
 
-    """ Save Model """
-    def save_model(self):
-        torch.save("torch_models"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        
+        # save the figure. if losses are zero after loading model, then load the figure for the losses
+        # next is to plot the cases 
 
-    """ Load Model """
-    def load_model(model_path):
-        print("Torch paths")
-        print(os.listdir("torch_models"))
-        model = torch.load('torch_models/'+os.listdir("torch_models")[0])
-        return model
+        
+        
 # y_pred.reshape(-1,1)
 
 
@@ -311,7 +309,16 @@ class Optimization:
 def main():
     case_df = get_cases()
     preprocessed_data = preprocessing(case_df)
-    county_name = preprocessed_data[-2]
+    county_name = preprocessed_data[-3]
+    state_name = preprocessed_data[-2]
+    state_county = state_name+"/"+county_name
+    state_county_dir = "torch_models/"+state_name+"/"+county_name
+    if state_county not in os.listdir("torch_models"):
+        try:   
+            os.makedirs(state_county_dir)
+        except:
+            pass
+    print(county_name)
     lastdate = preprocessed_data[-1]
     training_df, val_df, test_df, training_mean, training_std = train_test_val_split(preprocessed_data=preprocessed_data)
     training_df = normalize(training_df, training_mean, training_std)
@@ -320,7 +327,7 @@ def main():
     print(training_df.shape, val_df.shape, test_df.shape)
     input_dim = len(training_df.columns)
     output_dim = len(training_df.columns)
-    hidden_dim = 64
+    hidden_dim = 128
     layer_dim = 3
     batch_size = 1
     dropout = 0.2
@@ -332,12 +339,14 @@ def main():
 
 
     model = LSTMModel(input_dim = input_dim, hidden_dim=100, layer_dim = 3, output_dim = output_dim, dropout_prob=0.2)
+    model = model.to(device)
     loss_fn = nn.MSELoss(reduction="mean")
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer)
-    opt.train_if_empty(model_dir = "torch_models" , train_loader = train_loader, val_loader = val_loader, n_epochs = n_epochs)
+    opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer, state_county = state_county)
+    opt.train_if_empty(model_dir = state_county_dir , train_loader = train_loader, val_loader = val_loader, n_epochs = n_epochs)
     predictions, values = opt.evaluate(test_loader)
-    opt.plot_losses()
+    #print(predictions, values)
+  
     
     
 
