@@ -38,7 +38,7 @@ def preprocessing(case_df):
     region_col = list(case_df.columns.values)
     region_col_ax = region_col[11:]
     plot_cols = region_col_ax
-    st.text("Case database last updated: " + str(case_df.columns[-1]))
+    st.text("Case data last updated: " + str(case_df.columns[-1]))
     try:
         state_name = st.text_input("Enter state name ",) #'Mississippi') #or 'Mississippi'
     except:
@@ -76,7 +76,7 @@ def plot_county_cases(county, county_name):
 #plt.show()
 
 
-'''Training, Validation, and Test Split'''
+
 #Need to add test to check if training and validation sets have the same size due to ValueError
 def train_test_val_split(preprocessed_data):
     county = preprocessed_data[3]
@@ -99,14 +99,13 @@ def normalize(df, training_mean, training_std):
     return normed_df
 
 
-'''Denormalization'''
+
 def denormalize(df, training_mean, training_std ):
     #denormalized_df = training_std.values/(df.values - training_mean.values)
     denormalized_df = training_std.values*df.values + training_mean.values
     return denormalized_df
 
 
-'''Peek at the dataset's distribution of features'''
 #case_df.drop(columns[5:10], inplace=True, axis=1)
 #print(case_df)
 def torch_data_loader(x_train, x_val, x_test):
@@ -307,6 +306,7 @@ class Optimization:
 
 
 def main():
+    st.title("Covid-19 Cases")
     case_df = get_cases()
     preprocessed_data = preprocessing(case_df)
     county_name = preprocessed_data[-3]
