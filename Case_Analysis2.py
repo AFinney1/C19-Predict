@@ -24,6 +24,7 @@ from sklearn.preprocessing import MinMaxScaler
 from pandas.io.stata import StataReader
 from Case_pipeline import get_cases
 from PIL import Image
+import plotly.express as px
 
 
 device = "cpu" #if torch.cuda.is_available() else "cpu"
