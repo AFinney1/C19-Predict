@@ -14,6 +14,7 @@ import pandas as pd
 import seaborn as sns
 import sklearn
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import torch 
 import torch.nn as nn
@@ -46,7 +47,7 @@ def preprocessing(case_df):
         st.error("Please enter the proper name of the state without whitespace(e.g. 'Texas', not 'texas ')")
     region = case_df.loc[case_df['Province_State'] == state_name]
     #print(region)
-    st.write(region)
+    #st.write(region)
     county_list = region['Admin2']
     #default_county = county_list.iloc[0]
     try:
@@ -217,11 +218,11 @@ class Optimization:
 
     def train(self, train_loader, val_loader, batch_size=64, n_epochs=50, n_features=1):
         model_path = self.model_p
-
+        print("Training...")
         for epoch in range(1, n_epochs + 1):
             batch_losses = []
             #print(train_loader) 
-            print("Training...")
+            
             for x_batch, y_batch in train_loader:
                 x_batch = torch.tensor(x_batch[0])
                 #print(type(x_batch))# y_batch)
@@ -280,7 +281,10 @@ class Optimization:
             plt.title("Losses")
             plt.savefig(model_dir+"/Losses.png")
             fig = plt
-            st.pyplot(fig)
+            fig = px.line(x=list(range(len(self.train_losses))), y=self.train_losses, labels={"x": "Epoch", "y": "Training loss"})
+            fig.write_html(model_dir+"/train_loss.html")
+            #st.pyplot(fig)
+            components.html(model_dir+"/train_loss.html")
         else:
             
             #print("DOOT")
@@ -307,7 +311,6 @@ class Optimization:
 
 
 def app():
-    st.title("Covid-19 Cases")
     case_df = get_cases()
     preprocessed_data = preprocessing(case_df)
     county_name = preprocessed_data[-3]
@@ -328,11 +331,11 @@ def app():
     print(training_df.shape, val_df.shape, test_df.shape)
     input_dim = len(training_df.columns)
     output_dim = len(training_df.columns)
-    hidden_dim = 128
-    layer_dim = 3
+    hidden_dim = 256
+    layer_dim = 4
     batch_size = 1
     dropout = 0.2
-    n_epochs = 10
+    n_epochs = 35
     learning_rate = 1e-3
     weight_decay = 1e-6
 
@@ -345,7 +348,7 @@ def app():
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     opt = Optimization(model=model, loss_fn=loss_fn, optimizer=optimizer, state_county = state_county)
     st.write("Training and Validation Losses")
-    opt.train_if_empty(model_dir = state_county_dir , train_loader = train_loader, val_loader = val_loader, n_epochs = n_epochs)
+    opt.train_if_empty(model_dir = state_county_dir , train_loader = train_loader, val_loader = val_loader, batch_size = batch_size, n_epochs = n_epochs)
     predictions, values = opt.evaluate(test_loader)
     #print(predictions, values)
   
