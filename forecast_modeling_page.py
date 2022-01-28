@@ -269,30 +269,34 @@ class Optimization:
 
     def train_if_empty(self, model_dir, train_loader, val_loader, batch_size = 1,  n_epochs = 10):
         "if directory is empty, train model, else load one"
-        print(model_dir)
+        print("MODEL DIR:", model_dir)
         if not os.listdir(model_dir):
             self.train(train_loader, val_loader, batch_size = batch_size, n_epochs=n_epochs)
            # print(self.model_p)
            # self.save_model(self.model.state_dict())#, "torch_models/"+str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            plt.plot(self.train_losses, label="Training loss")
-            plt.plot(self.val_losses, label="Validation loss")
+            #plt.plot(self.train_losses, label="Training loss")
+            #plt.plot(self.val_losses, label="Validation loss")
+            loss_df = pd.DataFrame({"Training Loss": self.train_losses, "Validation Loss": self.val_losses})
+            loss_df.to_csv(model_dir+"/loss.csv")
             print(self.train_losses, self.val_losses)
             plt.legend()
             plt.title("Losses")
             plt.savefig(model_dir+"/Losses.png")
             fig = plt
             fig = px.line(x=list(range(len(self.train_losses))), y=self.train_losses, labels={"x": "Epoch", "y": "Training loss"})
-            fig.write_html(model_dir+"/train_loss.html")
-            #st.pyplot(fig)
-            components.html(model_dir+"/train_loss.html")
+
         else:
             
             #print("DOOT")
             print(os.listdir(model_dir))
             #model = torch.load()
-            self.model.load_state_dict(torch.load(model_dir+"/"+os.listdir(model_dir)[-1]))
-            fig = Image.open(model_dir+"/"+"Losses.png")
-            st.image(fig)
+            self.model.load_state_dict(torch.load(model_dir+"/"+os.listdir(model_dir)[0]))
+            loss_df = pd.read_csv(model_dir+"/loss.csv")
+            loss_df.rename(columns={"Unnamed: 0": "Epochs"}, inplace=True)
+            print(loss_df.columns)
+            fig = px.line(loss_df, x = 'Epochs', y = 'Training Loss')
+            fig.add_trace(px.line(x = lo'Epochs', y = 'Validation Loss'))
+            st.plotly_chart(fig)
    
 
 
