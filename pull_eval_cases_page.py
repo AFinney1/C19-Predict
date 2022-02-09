@@ -67,13 +67,8 @@ def preprocessing(case_df):
     return region_col, region_col_ax, region, county, initial_startdate, val_startdate, test_startdate, county_name, state_name, lastdate
 
 def plot_county_cases(county, county_name):
-    case_plot = county.plot(
-        title=("Daily cases in " + county_name + " county"),
-        legend=[county_name],
-        xlabel="Date",
-        ylabel='Confirmed Cases')
-    plt.legend([county_name])
-    return(case_plot)
+    case_plot = px.line(county, title = ("Total Cases in  " + county_name + " county"), labels = {"index": "Date", "value": "Confirmed Cases", "variable": "Confirmed Cases"})
+    st.plotly_chart(case_plot)
 #plt.show()
 
 
@@ -312,6 +307,8 @@ def app():
     preprocessed_data = preprocessing(case_df)
     county_name = preprocessed_data[-3]
     state_name = preprocessed_data[-2]
+    county_cases = preprocessed_data[3]
+    print(county_cases)
     state_county = state_name+"/"+county_name
     state_county_dir = "torch_models/"+state_name+"/"+county_name
     if state_county not in os.listdir("torch_models"):
@@ -319,7 +316,8 @@ def app():
             os.makedirs(state_county_dir)
         except:
             pass
-
+    county_cases.rename(columns={county_cases.columns[0]:county_name}, inplace=True)
+    plot_county_cases(county_cases, county_name)
     
     
 

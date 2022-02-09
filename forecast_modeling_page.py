@@ -26,7 +26,7 @@ from pandas.io.stata import StataReader
 from Case_pipeline import get_cases
 from PIL import Image
 import plotly.express as px
-
+from sklearn.linear_model import LinearRegression
 
 device = "cpu" #if torch.cuda.is_available() else "cpu"
 print(f"{device} " " is available")
@@ -67,15 +67,10 @@ def preprocessing(case_df):
     print(test_startdate)
     return region_col, region_col_ax, region, county, initial_startdate, val_startdate, test_startdate, county_name, state_name, lastdate
 
-def plot_county_cases(county, county_name):
-    case_plot = county.plot(
-        title=("Daily cases in " + county_name + " county"),
-        legend=[county_name],
-        xlabel="Date",
-        ylabel='Confirmed Cases')
-    plt.legend([county_name])
-    return(case_plot)
+
 #plt.show()
+
+  
 
 
 
@@ -294,8 +289,8 @@ class Optimization:
             loss_df = pd.read_csv(model_dir+"/loss.csv")
             loss_df.rename(columns={"Unnamed: 0": "Epochs"}, inplace=True)
             print(loss_df.columns)
-            fig = px.line(loss_df, x = 'Epochs', y = 'Training Loss')
-            fig.add_trace(px.line(x = lo'Epochs', y = 'Validation Loss'))
+            fig = px.line(loss_df, x = 'Epochs', y = ['Training Loss', 'Validation Loss'])
+            #fig.add_trace(px.line(x = loss_df['Epochs'], y = loss_df['Validation Loss']))
             st.plotly_chart(fig)
    
 
