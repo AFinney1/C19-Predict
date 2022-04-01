@@ -278,7 +278,7 @@ class Optimization:
             st.pyplot(fig)
         else:
             
-            #print("DOOT")
+            
             print(os.listdir(model_dir))
             #model = torch.load()
             self.model.load_state_dict(torch.load(model_dir+"/"+os.listdir(model_dir)[-1]))
