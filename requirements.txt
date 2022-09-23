@@ -67,7 +67,7 @@ pkg-resources==0.0.0
 plotly==4.14.3
 prometheus-client==0.10.1
 prompt-toolkit==3.0.14
-protobuf==3.14.0
+protobuf==3.18.3
 ptyprocess==0.7.0
 pyarrow==3.0.0
 pyasn1==0.4.8
